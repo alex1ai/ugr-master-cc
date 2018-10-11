@@ -7,4 +7,8 @@ This service stores the data which will be requested (get) by the Android-App, a
 The content that is being queried are **Content** instances, where each instance has as **Question** and **Answer** instance. 
 In this product it is all about internationalization, this means multi-languages (i18n) is one important feature in this project. 
 
+# Suitability for CC-18-19
 
+- It is not clear where this service will run later, thus it is important to establish an environment which works out of the box at any cloud server.
+- The actual implementation of functionality should not be too long (haha), thus the focus can be on setting up a CI-environment with testing and everything.
+- This project will actually be used and deployed after the course Cloud Computing, rather then ending up a dead github-repo
