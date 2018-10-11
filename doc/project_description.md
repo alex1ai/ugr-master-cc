@@ -5,6 +5,6 @@ This project is a RESTful WebService, which will be used for the infogration-pro
 This service stores the data which will be requested (get) by the Android-App, and updated (update/post/delete) by another webservice from responsible persons via GUI. Here we only care about the data-storage REST-service as this needs to run permanently in the cloud, in order to allow continous content upgrades to the users of the app.
 
 The content that is being queried are **Content** instances, where each instance has as **Question** and **Answer** instance. 
-
+In this product it is all about internationalization, this means multi-languages (i18n) is one important feature in this project. 
 
 
