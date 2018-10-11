@@ -2,15 +2,9 @@
 
 This repository will be filled with the project for assignment 'Cloud Computing' at the UGR.
 
+An explanation of this project's content can be found [here](https://github.com/alex1ai/ugr-master-cc/blob/doc/doc/project_description.md)
 
-## infogration-backend
 
-This project will be a WebService backend for an (Android-)App which is already available in the PlayStore. Until now the content of the App is hardcoded (Prototype-style) in the application. 
-It provides a Web-Interface for authorized persons to add, edit, style and translate their own contents. 
-Optional Functionality might be Peer-review of content as well...
-As the first concern should always be security, different microservices and framework will be used. 
-
-More information about the project coming soon...
 
 ## Tools 
 
