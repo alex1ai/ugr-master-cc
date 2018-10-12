@@ -1,6 +1,7 @@
 # Project architecture
 
 Demands:
+
 	- 24/7 uptime
 	- Internationalization i18n
 	- Connection to Android-App & other Frontend-Webservice for Updates
