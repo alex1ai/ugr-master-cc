@@ -24,7 +24,7 @@ This service stores the data which will be requested (get) by the Android-App, a
 	- Authentication service (might be included in Go naturally)
 	- Optional: Use Google-Translate-API to get translations for content we could not translate manually
 
-### Further Tools
+## Further Tools
 - **Vagrant** is used to automate creation of virtual machines. It allows automation of creation of VMs and it management via a config file.
 I will probably use two machines, one for the REST-API and one for the data base.
 Default system will be Ubuntu 18.04
