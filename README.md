@@ -11,14 +11,15 @@ This service stores the data which will be requested (get) by the Android-App, a
 
 ### Highlights:
 - Microservice-based in order to have good maintainability and seperation of concerns.
-- Go REST-API for communication with App and GUI, I use [Gorilla Mux](https://github.com/gorilla/mux) router as this is the mostly used one in Go.
+- Go REST-API for communication with App and GUI, I use [Gorilla Mux](https://github.com/gorilla/mux) router as this is the mostly used one in Go. (Service #1)
 - Messenger-service between the microservices will be [RabbitMQ](https://github.com/streadway/amqp) as this 'is the most widely deployed open source message broker'.
-- SQL data storage service with PostgreSQL, will run as a stand-alone service with REST
-- Authentication service (might be included in Go naturally) **TODO**
-- Optional: Use Google-Translate-API to get translations for content we could not translate manually
+- SQL data storage service with PostgreSQL, will run as a stand-alone service with REST (Serivce #2)
+- Authentication of normal users (get info only) and admins (edit content) (Service #3)
+- Optional: Use Google-Translate-API to get translations for content we could not translate manually (Service #4)
 
-## Deployment
-While there are different PaaS deployment services out there, I chose [zeit.co](https://zeit.co/) as it offers nice tutorials and a lightweight deployment mechanism. Furthermore it offers intergration of Docker (i.e. I can use any language I want besides Node/JS, which others offer exclusively), CI-support of Travis for automatic testing, and Github-Integration which deploys by pushing to master (if configured this way). How to setup Now is explained here [todo: add link]().
+## Deployment [https://infogration.now.sh](https:infogration.now.sh)
+While there are different PaaS deployment services out there, I chose [zeit.co](https://zeit.co/) as it offers nice tutorials and a lightweight deployment mechanism. Furthermore it offers intergration of Docker (i.e. I can use any language I want besides Node/JS, which others offer exclusively), CI-support of Travis for automatic testing, and Github-Integration which deploys by pushing to master (if configured this way). 
+No configuration is needed if you want to use Now. Everything is build automatically and aliased as _infogration_ if someone pushes to master or via Pull Requests. 
 
 ## Further Tools (will be included in the near future)
 - **Vagrant** is used to automate creation of virtual machines. It allows automation of creation of VMs and it management via a config file.
