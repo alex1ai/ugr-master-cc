@@ -40,20 +40,22 @@ func TestRootHandler(t *testing.T) {
 }
 
 func TestGetByIdHandler(t *testing.T) {
-	tt := []struct{
-		variable string
+	tt := []struct {
+		variable   string
 		shouldPass bool
 	}{
 		{"1", true},
 		{"2", true},
 		{"3", true},
 		{"4", false},
+		{"asdf", false},
+
 	}
 
 	for _, tc := range tt {
 		path := fmt.Sprintf("/get/%s", tc.variable)
 		req, err := http.NewRequest("GET", path, nil)
-		if err != nil{
+		if err != nil {
 			t.Error(err)
 		}
 
@@ -70,8 +72,6 @@ func TestGetByIdHandler(t *testing.T) {
 			t.Errorf("handler should have failed on routeVariable %s: got %v want %v",
 				tc.variable, rr.Code, http.StatusOK)
 		}
-
-
 
 	}
 }

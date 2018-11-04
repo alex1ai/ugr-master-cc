@@ -9,7 +9,7 @@ COPY . $GOPATH/src/github.com/alex1ai/infogration
 WORKDIR $GOPATH/src/github.com/alex1ai/infogration
 
 # get dependancies
-RUN go get -d -v
+RUN go get -d
 
 #build the binary
 RUN CGO_ENABLED=0 go build -ldflags "-s -w" -o /go/bin/main
