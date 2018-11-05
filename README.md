@@ -1,4 +1,5 @@
 # infogration-rest
+The usage of the most recent version is documented [here](https://github.com/alex1ai/ugr-master-cc/blob/gh-pages/usage.md).
 ## Description
 
 This project is a RESTful WebService, which will be used for _infogration_, an Android app, which I developed in a previous class in Germany.
@@ -17,9 +18,9 @@ This service stores the data which will be requested (get) by the Android-App, a
 - Authentication of normal users (get info only) and admins (edit content) (Service #3)
 - Optional: Use Google-Translate-API to get translations for content we could not translate manually (Service #4)
 
-## Deployment [https://infogration.now.sh](https:infogration.now.sh)
+## Deployment [https://infogration.now.sh](https://infogration.now.sh)
 While there are different PaaS deployment services out there, I chose [zeit.co](https://zeit.co/) as it offers nice tutorials and a lightweight deployment mechanism. Furthermore it offers intergration of Docker (i.e. I can use any language I want besides Node/JS, which others offer exclusively), CI-support of Travis for automatic testing, and Github-Integration which deploys by pushing to master (if configured this way). 
-No configuration is needed if you want to use Now. Everything is build automatically and aliased as _infogration_ if someone pushes to master or via Pull Requests. 
+**No configuration is needed** if you want to use Now. Everything is build automatically and aliased as _infogration_ if someone pushes to master or via Pull Requests. 
 
 ## Further Tools (will be included in the near future)
 - **Vagrant** is used to automate creation of virtual machines. It allows automation of creation of VMs and it management via a config file.
