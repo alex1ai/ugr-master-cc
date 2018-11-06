@@ -1,4 +1,7 @@
+[![Build Status](https://travis-ci.org/alex1ai/ugr-master-cc.svg?branch=master)](https://travis-ci.org/alex1ai/ugr-master-cc)
+
 # infogration-rest
+
 The usage of the most recent version is documented [here](https://github.com/alex1ai/ugr-master-cc/blob/gh-pages/usage.md).
 ## Description
 
