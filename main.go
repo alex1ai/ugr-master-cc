@@ -2,62 +2,11 @@ package main
 
 import (
 	"encoding/json"
-	"fmt"
 	"github.com/gorilla/mux"
 	"log"
 	"net/http"
-	"strconv"
 	"time"
 )
-
-// Type Modelling
-type Content struct {
-	Id       uint
-	Question string
-	Answer   string
-}
-
-type Language struct {
-	Code string
-}
-
-type Instance struct {
-	Content   Content
-	Language  Language
-	CreatedAt JSONTime
-}
-
-type JSONTime struct {
-	time.Time
-}
-
-type JSONResponse struct {
-	Status string
-	Data InstancePackage
-}
-
-// Alias for Array
-type InstancePackage []Instance
-
-func (t JSONTime) MarshalJSON() ([]byte, error) {
-	//do your serializing here
-	stamp := fmt.Sprintf("\"%d\"", t.Unix())
-	return []byte(stamp), nil
-}
-
-
-func (t *JSONTime) UnmarshalJSON(b []byte) error {
-	var s string
-	if err := json.Unmarshal(b, &s); err != nil {
-		return err
-	}
-	newTime, err := strconv.Atoi(s)
-	if err != nil {
-		return err
-	}
-	*t = JSONTime{time.Unix(int64(newTime), 0)}
-	return nil
-}
 
 // This will be later part of DB-API
 func dummyInstances() InstancePackage {
@@ -108,8 +57,9 @@ func jsonWrapper(status int, data InstancePackage) []byte {
 // Route-Handlers
 
 func RootHandler(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
-	w.Write([]byte("Welcome to the infogration REST-API!\n"))
+	w.Write(jsonWrapper(http.StatusOK, nil))
 }
 
 func GetAllHandler(w http.ResponseWriter, r *http.Request) {
@@ -119,6 +69,7 @@ func GetAllHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func GetByLangHandler(w http.ResponseWriter, r *http.Request) {
+
 	code, _ := mux.Vars(r)["code"]
 	data := filterByLanguage(code)
 	var status int
@@ -128,6 +79,7 @@ func GetByLangHandler(w http.ResponseWriter, r *http.Request) {
 		status = http.StatusOK
 	}
 	w.WriteHeader(status)
+	w.Header().Set("Content-Type", "application/json")
 	w.Write(jsonWrapper(status, data))
 }
 

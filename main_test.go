@@ -6,7 +6,6 @@ import (
 	"github.com/gorilla/mux"
 	"net/http"
 	"net/http/httptest"
-	"strings"
 	"testing"
 )
 
@@ -30,13 +29,6 @@ func TestRootHandler(t *testing.T) {
 	if status := rr.Code; status != http.StatusOK {
 		t.Errorf("handler returned wrong status code: got %v want %v",
 			status, http.StatusOK)
-	}
-
-	// Check the response body is what we expect.
-	expected := `Welcome to the infogration REST-API!`
-	if strings.Trim(rr.Body.String(), "\n") != expected {
-		t.Errorf("handler returned unexpected body: got %v want %v",
-			rr.Body.String(), expected)
 	}
 }
 
@@ -94,6 +86,9 @@ func TestGetAllHandler(t *testing.T) {
 			status, http.StatusOK)
 	}
 
+	if typ := rr.Header().Get("Content-Type"); typ != "application/json" {
+		t.Errorf("Expected content-type application/json, found %s" , typ)
+	}
 
 	var responseObject JSONResponse
 	err = json.Unmarshal(rr.Body.Bytes(), &responseObject)
@@ -106,3 +101,6 @@ func TestGetAllHandler(t *testing.T) {
 			rr.Body, 4)
 	}
 }
+
+
+// TODO: create one method which will be called from all get request with custom boolean function for matching content
