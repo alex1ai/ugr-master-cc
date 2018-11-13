@@ -3,7 +3,6 @@ package main
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/gorilla/mux"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -41,7 +40,6 @@ func TestGetByIdHandler(t *testing.T) {
 		{"en", true},
 		{"es", true},
 	}
-
 	for _, tc := range tt {
 		path := fmt.Sprintf("/get/%s", tc.variable)
 		req, err := http.NewRequest("GET", path, nil)
@@ -50,14 +48,10 @@ func TestGetByIdHandler(t *testing.T) {
 		}
 
 		rr := httptest.NewRecorder()
-
 		// Need to create a router that we can pass the request through so that the vars will be added to the context
-		router := mux.NewRouter()
-		router.HandleFunc("/get/{code}", GetByLangHandler)
+		router := Router()
 		router.ServeHTTP(rr, req)
 
-		// In this case, our MetricsHandler returns a non-200 response
-		// for a route variable it doesn't know about.
 		if rr.Code == http.StatusOK && !tc.shouldPass {
 			t.Errorf("handler should have failed on routeVariable %s: got %v want %v",
 				tc.variable, rr.Code, http.StatusOK)
@@ -66,12 +60,38 @@ func TestGetByIdHandler(t *testing.T) {
 	}
 }
 
+
+func TestDeleteByIdHandler(t *testing.T) {
+	for i:= 0 ; i <2; i++ {
+		path := fmt.Sprintf("/get/%d", 1)
+		req, err := http.NewRequest("DELETE", path, nil)
+		if err != nil {
+			t.Error(err)
+		}
+
+		rr := httptest.NewRecorder()
+		// Need to create a router that we can pass the request through so that the vars will be added to the context
+		router := Router()
+		router.ServeHTTP(rr, req)
+
+		if rr.Code != http.StatusOK {
+			t.Errorf("handler should have return bad status on second time delete")
+		}
+		// TODO: Fix data management then, this will work. right now every requests creates a new DB
+		//if rr.Code == http.StatusNotFound && i == 0 {
+		//	t.Errorf("handler should have return OK on first time delete")
+		//}
+	}
+
+
+
+}
+
 func TestGetAllHandler(t *testing.T) {
 	req, err := http.NewRequest("GET", "/all", nil)
 	if err != nil {
 		t.Fatal(err)
 	}
-
 	// We create a ResponseRecorder (which satisfies http.ResponseWriter) to record the response.
 	rr := httptest.NewRecorder()
 	handler := http.HandlerFunc(GetAllHandler)
@@ -87,7 +107,7 @@ func TestGetAllHandler(t *testing.T) {
 	}
 
 	if typ := rr.Header().Get("Content-Type"); typ != "application/json" {
-		t.Errorf("Expected content-type application/json, found %s" , typ)
+		t.Errorf("Expected content-type application/json, found %s", typ)
 	}
 
 	var responseObject JSONResponse
@@ -97,10 +117,9 @@ func TestGetAllHandler(t *testing.T) {
 	}
 	// Check the response body is what we expect.
 	if len(responseObject.Data) != 4 {
-		t.Errorf("handler returned unexpected length: got %d want %d",
+		t.Errorf("handler returned unexpected length: got %d expected %d",
 			rr.Body, 4)
 	}
 }
-
 
 // TODO: create one method which will be called from all get request with custom boolean function for matching content

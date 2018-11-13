@@ -5,45 +5,17 @@ import (
 	"github.com/gorilla/mux"
 	"log"
 	"net/http"
-	"time"
+	"strconv"
 )
 
-// This will be later part of DB-API
-func dummyInstances() InstancePackage {
-	return InstancePackage{
-		{
-			Content{1, "How is life these days?", "So good"},
-			Language{"en"},
-			JSONTime{time.Now()},
-		},
-		{
-			Content{2, "Are 2 questions sufficient?", "I do not think so!"},
-			Language{"en"},
-			JSONTime{time.Now()},
-		},
-		{
-			Content{3, "Are 3 questions sufficient?", "I think so!"},
-			Language{"en"},
-			JSONTime{time.Now()},
-		},
-		{
-			Content{2, "2 preguntas son suficiente?", "Creo que no!"},
-			Language{"es"},
-			JSONTime{time.Now()},
-		},
+func getDB() DummyData {
+	db := new(DummyData)
+	err := db.create()
+	if err != nil {
+		log.Fatal(err)
 	}
+	return *db
 }
-
-func filterByLanguage(langCode string) (ret InstancePackage) {
-	for _, i := range dummyInstances() {
-		if i.Language.Code == langCode {
-			ret = append(ret, i)
-		}
-	}
-	return ret
-}
-
-// END DB-API
 
 // Helper functions
 func jsonWrapper(status int, data InstancePackage) []byte {
@@ -56,39 +28,73 @@ func jsonWrapper(status int, data InstancePackage) []byte {
 
 // Route-Handlers
 
+func sendResponse(writer http.ResponseWriter, status int, data InstancePackage) {
+	writer.Header().Set("Content-Type", "application/json")
+	writer.WriteHeader(status)
+	writer.Write(jsonWrapper(status, data))
+}
+
 func RootHandler(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusOK)
-	w.Write(jsonWrapper(http.StatusOK, nil))
+	sendResponse(w, http.StatusOK, nil)
 }
 
 func GetAllHandler(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusOK)
-	w.Write(jsonWrapper(http.StatusOK, dummyInstances()))
+	db := getDB()
+	data, err := db.query(map[string]string{
+		"lang": "all",
+	})
+	if err == nil {
+		sendResponse(w, http.StatusOK, data)
+	} else {
+		sendResponse(w, http.StatusBadRequest, nil)
+	}
 }
 
 func GetByLangHandler(w http.ResponseWriter, r *http.Request) {
-
 	code, _ := mux.Vars(r)["code"]
-	data := filterByLanguage(code)
+	db := getDB()
+	data, err := db.query(map[string]string{
+		"lang": code,
+	})
 	var status int
-	if len(data) == 0 {
+	if len(data) == 0 || err != nil {
 		status = http.StatusBadRequest
 	} else {
 		status = http.StatusOK
 	}
-	w.WriteHeader(status)
-	w.Header().Set("Content-Type", "application/json")
-	w.Write(jsonWrapper(status, data))
+	sendResponse(w, status, data)
 }
 
-func main() {
+func DeleteByIdHandler(w http.ResponseWriter, r *http.Request) {
+	id, _ := mux.Vars(r)["id"]
+	db := getDB()
+	idNumber, err := strconv.Atoi(id)
+	if err != nil || idNumber < 0{
+
+	}
+	err = db.removeById(uint(idNumber))
+	if err != nil {
+		sendResponse(w, http.StatusNotFound, nil)
+	}
+	sendResponse(w, http.StatusOK, nil)
+}
+
+func Router() *mux.Router {
 	r := mux.NewRouter()
 	// Routes consist of a path and a handler function.
 	r.HandleFunc("/all", GetAllHandler).Methods("GET")
 	r.HandleFunc("/get/{code}", GetByLangHandler).Methods("GET")
+	r.HandleFunc("/get/{id}", DeleteByIdHandler).Methods("DELETE")
+
 	r.HandleFunc("/", RootHandler)
+
+	return r
+}
+
+func main() {
+
+	// Get Router
+	r := Router()
 
 	// Bind to a port and pass our router in
 	log.Fatal(http.ListenAndServe(":8000", r))
