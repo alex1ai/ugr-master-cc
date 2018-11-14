@@ -7,7 +7,7 @@ The current version is always automatically deployed at
 
 In order to get ALL the data which is saved you can use
     
-    curl https://infogration.now.sh/all | python -m json.tool
+    curl https://infogration.now.sh/content/all | python -m json.tool
 
 where the last part is for pretty print and will return
 
@@ -66,34 +66,31 @@ which includes some dummy data that I created there.
 
 To get all instances of one language one can run
 
-    https://infogration.now.sh/get/{lang}
+    https://infogration.now.sh/content/{lang}
 
 For lang='es' for example we get
 
     {
-    "Status": "OK",
-    "Data": [
+    "status": "OK",
+    "data": [
         {
-            "Content": {
+            "content": {
                 "Id": 2,
                 "Question": "2 preguntas son suficiente?",
                 "Answer": "Creo que no!"
             },
-            "Language": {
+            "language": {
                 "Code": "es"
             },
-            "CreatedAt": "1541456019"
+            "createdAt": "1541456019"
         }
     ]
     }
 
 as an answer. If we enter something like
 
-    https://infogration.now.sh/get/asdf
+    https://infogration.now.sh/content/asdf
 
 we get
 
-    {
-    "Status": "Bad Request",
-    "Data": null
-    }
+    {"status":"Bad Request","data":[]}
