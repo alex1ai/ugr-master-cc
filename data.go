@@ -2,15 +2,9 @@ package main
 
 import (
 	"errors"
+	"fmt"
 	"time"
 )
-
-type DBConnector interface {
-	create() error
-	query(params map[string]string) (resp InstancePackage, error error)
-	addInstance(newInstance Instance) error
-	close() error
-}
 
 type DummyData struct {
 	instances InstancePackage
@@ -46,22 +40,36 @@ func (dd *DummyData) create() error {
 	return nil
 }
 
-func (dd *DummyData) query(params map[string]string) (resp InstancePackage, error error) {
-	lang, ok := params["lang"]
-	if !ok {
-		return nil, errors.New("keyword lang not in params")
-	}
+func findInData(dd DummyData, fn func(instance Instance) bool) (InstancePackage, error) {
 	var ret InstancePackage
-	if lang == "all" {
-		return dd.instances, nil
-	}
 	for _, i := range dd.instances {
-		if i.Language.Code == lang {
+		if fn(i) {
 			ret = append(ret, i)
 		}
 	}
-
+	if len(ret) == 0 {
+		return InstancePackage{}, errors.New("could not find instance")
+	}
 	return ret, nil
+}
+
+func (dd *DummyData) getByLanguage(langCode string) (resp InstancePackage, error error) {
+	if langCode == "all" {
+		return dd.instances, nil
+	}
+	return findInData(*dd, func(instance Instance) bool {
+		return instance.Language.Code == langCode
+	})
+}
+
+func (dd *DummyData) getById(id uint, lang string) (resp Instance, error error) {
+	data, err := findInData(*dd, func(instance Instance) bool {
+		return instance.Language.Code == lang && instance.Content.Id == id
+	})
+	if len(data) != 1 || err != nil {
+		return Instance{}, errors.New(fmt.Sprintf("did not find instance with id %d and lang %s", id, lang))
+	}
+	return data[0], nil
 }
 
 func (dd *DummyData) close() error {
@@ -70,23 +78,42 @@ func (dd *DummyData) close() error {
 }
 
 func (dd *DummyData) addInstance(other Instance) error {
+	data, _ := findInData(*dd, func(instance Instance) bool {
+		return instance == other
+	})
+	if len(data) > 0 {
+		return dd.updateById(other.Content.Id, other.Language.Code, other)
+	}
+
 	dd.instances = append(dd.instances, other)
 	return nil
 }
 
-func (dd *DummyData) removeById(id uint) error{
-	var ret InstancePackage
+func (dd *DummyData) removeById(id uint, lang string) error {
 	numBefore := dd.GetLength()
-	for _, i := range dd.instances {
-		if i.Content.Id != id {
-			ret = append(ret, i)
-		}
-	}
-	if numBefore == len(ret) {
+	data, err := findInData(*dd, func(instance Instance) bool {
+		return instance.Language.Code != lang && instance.Content.Id != id
+	})
+	if numBefore == len(data) || err != nil {
 		return errors.New("nothing was deleted")
 	}
 
-	dd.instances = ret
+	dd.instances = data
+	return nil
+}
+
+func (dd *DummyData) updateById(id uint, lang string, updateInstance Instance) error {
+	var element = -1
+	for e, i := range dd.instances {
+		if i.Content.Id == id && i.Language.Code == lang {
+			element = e
+		}
+	}
+	if element == -1 {
+		return errors.New(fmt.Sprintf("could not find elemend %d", id))
+	}
+
+	dd.instances[element] = updateInstance
 
 	return nil
 }

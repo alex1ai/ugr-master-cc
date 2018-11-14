@@ -5,10 +5,9 @@ import (
 	"time"
 )
 
-
 func TestCreateDB(t *testing.T) {
 	db := getDB()
-	data, err := db.query(map[string]string{"lang": "all"})
+	data, err := db.getByLanguage("all")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -36,7 +35,7 @@ func TestRemoveById(t *testing.T) {
 	var oldInstances = db.GetLength()
 
 	// Remove valid
-	db.removeById(1)
+	db.removeById(1, "en")
 	if db.GetLength() == oldInstances {
 		t.Error("did not remove instance")
 	}
@@ -44,9 +43,24 @@ func TestRemoveById(t *testing.T) {
 	oldInstances = db.GetLength()
 
 	// Remove not existing should not change anything
-	db.removeById(10)
+	db.removeById(10, "es")
 	if db.GetLength() != oldInstances {
 		t.Error("did remove instance but this one did not exist")
+	}
+
+}
+
+func TestUpdateById(t *testing.T) {
+	db := getDB()
+	upgraded := Instance{
+		Content{1, "How is life these days? Upgraded version", "So good"},
+		Language{"en"},
+		JSONTime{time.Now()},
+	}
+	db.updateById(1, "en", upgraded)
+	d, err := db.getById(1, "en")
+	if err != nil || d != upgraded {
+		t.Error("The instance in the db was not updated")
 	}
 
 }

@@ -41,7 +41,7 @@ func TestGetByIdHandler(t *testing.T) {
 		{"es", true},
 	}
 	for _, tc := range tt {
-		path := fmt.Sprintf("/get/%s", tc.variable)
+		path := fmt.Sprintf("/content/%s", tc.variable)
 		req, err := http.NewRequest("GET", path, nil)
 		if err != nil {
 			t.Error(err)
@@ -60,10 +60,9 @@ func TestGetByIdHandler(t *testing.T) {
 	}
 }
 
-
 func TestDeleteByIdHandler(t *testing.T) {
-	for i:= 0 ; i <2; i++ {
-		path := fmt.Sprintf("/get/%d", 1)
+	for i := 0; i < 2; i++ {
+		path := fmt.Sprintf("/content/%s/%d", "en", 1)
 		req, err := http.NewRequest("DELETE", path, nil)
 		if err != nil {
 			t.Error(err)
@@ -82,8 +81,6 @@ func TestDeleteByIdHandler(t *testing.T) {
 		//	t.Errorf("handler should have return OK on first time delete")
 		//}
 	}
-
-
 
 }
 
@@ -122,4 +119,32 @@ func TestGetAllHandler(t *testing.T) {
 	}
 }
 
-// TODO: create one method which will be called from all get request with custom boolean function for matching content
+func TestAddInstanceHandler(t *testing.T) {
+	tt := []struct {
+		lang       string
+		id         uint
+		q          string
+		a          string
+		shouldPass bool
+	}{
+		{"de", 3, "test1", "test2", true},
+		{"en", 2, "hi there", "you too", true},
+	}
+	for _, tc := range tt {
+		path := fmt.Sprintf("/content/%s/%d/%s/%s", tc.lang, tc.id, tc.q, tc.a)
+		req, err := http.NewRequest("PUT", path, nil)
+		if err != nil {
+			t.Error(err)
+		}
+
+		rr := httptest.NewRecorder()
+		// Need to create a router that we can pass the request through so that the vars will be added to the context
+		router := Router()
+		router.ServeHTTP(rr, req)
+
+		if rr.Code == http.StatusOK && !tc.shouldPass {
+			t.Errorf("handler did not pass on PUT %s", path)
+		}
+
+	}
+}
