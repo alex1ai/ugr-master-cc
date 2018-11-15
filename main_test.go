@@ -88,7 +88,7 @@ func TestDeleteByIdHandler(t *testing.T) {
 }
 
 func TestGetAllHandler(t *testing.T) {
-	req, err := http.NewRequest("GET", "/content/", nil)
+	req, err := http.NewRequest("GET", "/content", nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -135,7 +135,7 @@ func TestAddInstanceHandler(t *testing.T) {
 	}
 	js, _ := json.Marshal(i)
 
-	req, err := http.NewRequest("POST", "/content/", strings.NewReader(string(js)))
+	req, err := http.NewRequest("POST", "/content", strings.NewReader(string(js)))
 	if err != nil {
 		t.Error(err)
 	}
@@ -169,7 +169,7 @@ func TestPostByIdHandler(t *testing.T) {
 	}
 	js, _ := json.Marshal(i)
 
-	req, err := http.NewRequest("POST", "/content/", strings.NewReader(string(js)))
+	req, err := http.NewRequest("POST", "/content", strings.NewReader(string(js)))
 	if err != nil {
 		t.Error(err)
 	}
