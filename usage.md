@@ -7,7 +7,7 @@ The current version is always automatically deployed at
 
 In order to get ALL the data which is saved you can use
     
-    curl https://infogration.now.sh/content/all | python -m json.tool
+    curl https://infogration.now.sh/content | python -m json.tool
 
 where the last part is for pretty print and will return
 
@@ -87,10 +87,5 @@ For lang='es' for example we get
     ]
     }
 
-as an answer. If we enter something like
+as an answer. 
 
-    https://infogration.now.sh/content/asdf
-
-we get
-
-    {"status":"Bad Request","data":[]}
