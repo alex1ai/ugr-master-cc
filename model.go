@@ -7,20 +7,37 @@ import (
 	"time"
 )
 
+// Language Enum more or less
+type LangRegistry struct {
+	DE  string
+	EN  string
+	ES  string
+	AR  string
+	ALL string
+}
+
+func newLangRegistry() *LangRegistry {
+	return &LangRegistry{
+		DE:  "de",
+		EN:  "en",
+		ES:  "es",
+		AR:  "ar",
+		ALL: "all",
+	}
+}
+
+var Languages = newLangRegistry()
+
 // Type Modelling
 type Content struct {
-	Id       uint `json:"id"`
+	Id       uint   `json:"id"`
 	Question string `json:"question"`
 	Answer   string `json:"answer"`
 }
 
-type Language struct {
-	Code string `json:"code"`
-}
-
 type Instance struct {
-	Content   Content `json:"content"`
-	Language  Language `json:"language"`
+	Content   Content  `json:"content"`
+	Language  string   `json:"language"`
 	CreatedAt JSONTime `json:"createdAt"`
 }
 
@@ -29,8 +46,8 @@ type JSONTime struct {
 }
 
 type JSONResponse struct {
-	Status string `json:"status"`
-	Data InstancePackage `json:"data"`
+	Status string          `json:"status"`
+	Data   InstancePackage `json:"data"`
 }
 
 // Alias for Array
@@ -41,7 +58,6 @@ func (t JSONTime) MarshalJSON() ([]byte, error) {
 	stamp := fmt.Sprintf("\"%d\"", t.Unix())
 	return []byte(stamp), nil
 }
-
 
 func (t *JSONTime) UnmarshalJSON(b []byte) error {
 	var s string

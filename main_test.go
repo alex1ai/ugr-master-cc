@@ -3,9 +3,12 @@ package main
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/google/go-cmp/cmp"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
+	"time"
 )
 
 func TestRootHandler(t *testing.T) {
@@ -85,7 +88,7 @@ func TestDeleteByIdHandler(t *testing.T) {
 }
 
 func TestGetAllHandler(t *testing.T) {
-	req, err := http.NewRequest("GET", "/all", nil)
+	req, err := http.NewRequest("GET", "/content/", nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -120,31 +123,74 @@ func TestGetAllHandler(t *testing.T) {
 }
 
 func TestAddInstanceHandler(t *testing.T) {
-	tt := []struct {
-		lang       string
-		id         uint
-		q          string
-		a          string
-		shouldPass bool
-	}{
-		{"de", 3, "test1", "test2", true},
-		{"en", 2, "hi there", "you too", true},
+	i := InstancePackage{
+		{Content{4, "2 Nueva Edicion!", "Creo que no!"},
+			Languages.ES,
+			JSONTime{time.Now()},
+		},
+		{Content{5, "2 Nueva Edicion!", "Creo que no!"},
+			Languages.ES,
+			JSONTime{time.Now()},
+		},
 	}
-	for _, tc := range tt {
-		path := fmt.Sprintf("/content/%s/%d/%s/%s", tc.lang, tc.id, tc.q, tc.a)
-		req, err := http.NewRequest("PUT", path, nil)
-		if err != nil {
-			t.Error(err)
-		}
+	js, _ := json.Marshal(i)
 
-		rr := httptest.NewRecorder()
-		// Need to create a router that we can pass the request through so that the vars will be added to the context
-		router := Router()
-		router.ServeHTTP(rr, req)
-
-		if rr.Code == http.StatusOK && !tc.shouldPass {
-			t.Errorf("handler did not pass on PUT %s", path)
-		}
-
+	req, err := http.NewRequest("POST", "/content/", strings.NewReader(string(js)))
+	if err != nil {
+		t.Error(err)
 	}
+
+	rr := httptest.NewRecorder()
+	// Need to create a router that we can pass the request through so that the vars will be added to the context
+	router := Router()
+	router.ServeHTTP(rr, req)
+
+	if rr.Code != http.StatusOK {
+		t.Errorf("handler did not pass on POST %s", "/content")
+	}
+
+	var resp JSONResponse
+	dec := json.NewDecoder(rr.Body)
+
+	if err = dec.Decode(&resp); err != nil {
+		t.Error(err)
+	}
+	if cmp.Equal(i, resp.Data) {
+		t.Errorf("Found different instances even though we updated an existing one\nFound %s\n expected %s", rr.Body.String(), js)
+	}
+}
+
+func TestPostByIdHandler(t *testing.T) {
+	i := InstancePackage{
+		{Content{2, "2 Nueva Edicion!", "Creo que no!"},
+			Languages.ES,
+			JSONTime{time.Now()},
+		},
+	}
+	js, _ := json.Marshal(i)
+
+	req, err := http.NewRequest("POST", "/content/", strings.NewReader(string(js)))
+	if err != nil {
+		t.Error(err)
+	}
+
+	rr := httptest.NewRecorder()
+	// Need to create a router that we can pass the request through so that the vars will be added to the context
+	router := Router()
+	router.ServeHTTP(rr, req)
+
+	if rr.Code != http.StatusOK {
+		t.Errorf("handler did not pass on POST %s", "/content")
+	}
+
+	var resp JSONResponse
+	dec := json.NewDecoder(rr.Body)
+
+	if err = dec.Decode(&resp); err != nil {
+		t.Error(err)
+	}
+	if cmp.Equal(i, resp.Data) {
+		t.Errorf("Found different instances even though we updated an existing one\nFound %s\n expected %s", rr.Body.String(), js)
+	}
+
 }

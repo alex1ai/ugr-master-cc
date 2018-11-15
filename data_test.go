@@ -20,7 +20,7 @@ func TestAddInstance(t *testing.T) {
 	db := getDB()
 	newInstance := Instance{
 		Content{5, "Question #5?", "yeaaaaah."},
-		Language{"en"},
+		Languages.ES,
 		JSONTime{time.Now()},
 	}
 	numberOfInstances := db.GetLength()
@@ -35,7 +35,7 @@ func TestRemoveById(t *testing.T) {
 	var oldInstances = db.GetLength()
 
 	// Remove valid
-	db.removeById(1, "en")
+	db.removeById(1, Languages.EN)
 	if db.GetLength() == oldInstances {
 		t.Error("did not remove instance")
 	}
@@ -54,12 +54,12 @@ func TestUpdateById(t *testing.T) {
 	db := getDB()
 	upgraded := Instance{
 		Content{1, "How is life these days? Upgraded version", "So good"},
-		Language{"en"},
+		Languages.EN,
 		JSONTime{time.Now()},
 	}
 	db.updateById(1, "en", upgraded)
-	d, err := db.getById(1, "en")
-	if err != nil || d != upgraded {
+	d, _ := db.getById(1, Languages.EN)
+	if d != upgraded {
 		t.Error("The instance in the db was not updated")
 	}
 

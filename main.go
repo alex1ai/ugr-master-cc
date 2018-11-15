@@ -6,7 +6,6 @@ import (
 	"log"
 	"net/http"
 	"strconv"
-	"time"
 )
 
 func getDB() DummyData {
@@ -63,20 +62,25 @@ func GetByLangHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func PostByIdHandler(w http.ResponseWriter, r *http.Request) {
-	id, _ := mux.Vars(r)["id"]
-	lang, _ := mux.Vars(r)["lang"]
-
-	idInt, err := strconv.Atoi(id)
 	db := getDB()
-
-	data, err := db.getById(uint(idInt), lang)
-	var status int
-	if err == nil {
-		status = http.StatusBadRequest
+	decoder := json.NewDecoder(r.Body)
+	status := http.StatusOK
+	var ip InstancePackage
+	if err := decoder.Decode(&ip); err != nil {
+		status, ip = http.StatusBadRequest, InstancePackage{}
 	} else {
-		status = http.StatusOK
+		for _, j := range ip {
+			id, lang := j.Content.Id, j.Language
+			_, exists := db.getById(id, lang)
+			// This (lang,id) is not yet known -> Put
+			if !exists {
+				db.addInstance(j)
+			} else { // It is already known -> Update
+				db.updateById(id, lang, j)
+			}
+		}
 	}
-	sendResponse(w, status, InstancePackage{data,})
+	sendResponse(w, status, ip)
 }
 
 func DeleteByIdHandler(w http.ResponseWriter, r *http.Request) {
@@ -85,7 +89,7 @@ func DeleteByIdHandler(w http.ResponseWriter, r *http.Request) {
 	db := getDB()
 	idNumber, err := strconv.Atoi(id)
 	if err != nil || idNumber < 0 {
-
+		sendResponse(w, http.StatusBadRequest, nil)
 	}
 	err = db.removeById(uint(idNumber), lang)
 	if err != nil {
@@ -95,36 +99,35 @@ func DeleteByIdHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func AddInstanceHandler(w http.ResponseWriter, r *http.Request) {
-	id, e1 := mux.Vars(r)["id"]
-	lang, e2 := mux.Vars(r)["lang"]
-	q, e3 := mux.Vars(r)["q"]
-	a, e4 := mux.Vars(r)["a"]
-	idI, err := strconv.Atoi(id)
-
-	if !(e1 == e2 == e3 == e4) || err != nil || idI < 0 {
-		sendResponse(w, http.StatusBadRequest, nil)
-	}
-	inst := Instance{
-		Content{uint(idI), q, a},
-		Language{lang},
-		JSONTime{time.Now()},
-	}
 	db := getDB()
+	decoder := json.NewDecoder(r.Body)
+	status := http.StatusOK
+	var ip InstancePackage
+	if err := decoder.Decode(&ip); err != nil {
+		status, ip = http.StatusBadRequest, InstancePackage{}
+	} else {
+		for _, j := range ip {
+			if _, exists := db.getById(j.Content.Id, j.Language); !exists {
+				db.addInstance(j)
+			}
+		}
+	}
+	sendResponse(w, status, ip)
+}
 
-	db.addInstance(inst)
-	sendResponse(w, http.StatusOK, InstancePackage{inst,})
+func ErrorHandler(w http.ResponseWriter, r *http.Request) {
+	http.Error(w, "This is not the page you are looking for", http.StatusNotFound)
 }
 
 func Router() *mux.Router {
 	r := mux.NewRouter()
-	// Routes consist of a path and a handler function.
-	r.HandleFunc("/all", GetAllHandler).Methods("GET")
+	r.HandleFunc("/content", GetAllHandler).Methods("GET")
 	r.HandleFunc("/content/{lang}", GetByLangHandler).Methods("GET")
 	r.HandleFunc("/content/{lang}/{id}", DeleteByIdHandler).Methods("DELETE")
-	r.HandleFunc("/content/{lang}/{id}", PostByIdHandler).Methods("POST")
-	r.HandleFunc("/content/{lang}/{id}/{q}/{a}", AddInstanceHandler).Methods("PUT")
-
+	r.HandleFunc("/content", PostByIdHandler).Methods("POST")
+	r.HandleFunc("/content", AddInstanceHandler).Methods("PUT")
 	r.HandleFunc("/", RootHandler)
+	r.HandleFunc("/{.*}", ErrorHandler)
 
 	return r
 }

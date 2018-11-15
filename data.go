@@ -18,22 +18,22 @@ func (dd *DummyData) create() error {
 	dd.instances = InstancePackage{
 		{
 			Content{1, "How is life these days?", "So good"},
-			Language{"en"},
+			Languages.EN,
 			JSONTime{time.Now()},
 		},
 		{
 			Content{2, "Are 2 questions sufficient?", "I do not think so!"},
-			Language{"en"},
+			Languages.EN,
 			JSONTime{time.Now()},
 		},
 		{
 			Content{3, "Are 3 questions sufficient?", "I think so!"},
-			Language{"en"},
+			Languages.EN,
 			JSONTime{time.Now()},
 		},
 		{
 			Content{2, "2 preguntas son suficiente?", "Creo que no!"},
-			Language{"es"},
+			Languages.ES,
 			JSONTime{time.Now()},
 		},
 	}
@@ -58,18 +58,18 @@ func (dd *DummyData) getByLanguage(langCode string) (resp InstancePackage, error
 		return dd.instances, nil
 	}
 	return findInData(*dd, func(instance Instance) bool {
-		return instance.Language.Code == langCode
+		return instance.Language == langCode
 	})
 }
 
-func (dd *DummyData) getById(id uint, lang string) (resp Instance, error error) {
+func (dd *DummyData) getById(id uint, lang string) (resp Instance, found bool) {
 	data, err := findInData(*dd, func(instance Instance) bool {
-		return instance.Language.Code == lang && instance.Content.Id == id
+		return instance.Language == lang && instance.Content.Id == id
 	})
 	if len(data) != 1 || err != nil {
-		return Instance{}, errors.New(fmt.Sprintf("did not find instance with id %d and lang %s", id, lang))
+		return Instance{}, false
 	}
-	return data[0], nil
+	return data[0], true
 }
 
 func (dd *DummyData) close() error {
@@ -82,7 +82,7 @@ func (dd *DummyData) addInstance(other Instance) error {
 		return instance == other
 	})
 	if len(data) > 0 {
-		return dd.updateById(other.Content.Id, other.Language.Code, other)
+		return dd.updateById(other.Content.Id, other.Language, other)
 	}
 
 	dd.instances = append(dd.instances, other)
@@ -92,7 +92,7 @@ func (dd *DummyData) addInstance(other Instance) error {
 func (dd *DummyData) removeById(id uint, lang string) error {
 	numBefore := dd.GetLength()
 	data, err := findInData(*dd, func(instance Instance) bool {
-		return instance.Language.Code != lang && instance.Content.Id != id
+		return instance.Language != lang && instance.Content.Id != id
 	})
 	if numBefore == len(data) || err != nil {
 		return errors.New("nothing was deleted")
@@ -105,7 +105,7 @@ func (dd *DummyData) removeById(id uint, lang string) error {
 func (dd *DummyData) updateById(id uint, lang string, updateInstance Instance) error {
 	var element = -1
 	for e, i := range dd.instances {
-		if i.Content.Id == id && i.Language.Code == lang {
+		if i.Content.Id == id && i.Language == lang {
 			element = e
 		}
 	}

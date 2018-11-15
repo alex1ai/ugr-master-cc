@@ -1,5 +1,7 @@
 {
-  "alias": ["infogration"],
+  "alias": [
+    "infogration"
+  ],
   "type": "docker",
   "features": {
     "cloud": "v2"
