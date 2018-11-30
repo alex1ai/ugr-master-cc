@@ -23,6 +23,7 @@
         src: https://dl.google.com/go/go1.11.2.linux-amd64.tar.gz 
         dest: /usr/local/
         remote_src: yes
+        creates: /usr/local/go
 
     - name: Create Source Path for Github-Project
       file: 
@@ -50,7 +51,7 @@
 
     - name: Install project
       shell: 
-        cmd: "go build main.go"
+        cmd: "go install"
         chdir: "{{ project_dir }}"
 
     - name: Run webservice in different process
