@@ -2,9 +2,11 @@ package main
 
 import (
 	"encoding/json"
+	"fmt"
 	"github.com/gorilla/mux"
 	"log"
 	"net/http"
+	"os"
 	"strconv"
 )
 
@@ -137,6 +139,14 @@ func main() {
 	// Get Router
 	r := Router()
 
+	port := os.Getenv("PORT")
+	if port == "" {
+		port = "80"
+	}
+	ip := os.Getenv("IP")
+	if ip == "" {
+		port = "0.0.0.0"
+	}
 	// Bind to a port and pass our router in
-	log.Fatal(http.ListenAndServe(":443", r))
+	log.Fatal(http.ListenAndServe(fmt.Sprintf("%s:%s", ip, port), r))
 }
