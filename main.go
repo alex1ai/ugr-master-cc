@@ -145,7 +145,7 @@ func main() {
 	}
 	ip := os.Getenv("IP")
 	if ip == "" {
-		port = "0.0.0.0"
+		ip = "0.0.0.0"
 	}
 	// Bind to a port and pass our router in
 	log.Fatal(http.ListenAndServe(fmt.Sprintf("%s:%s", ip, port), r))

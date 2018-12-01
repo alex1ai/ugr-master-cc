@@ -1,11 +1,12 @@
 ---
-- hosts: all
+- hosts: azure
   vars:
     go_dir: "/usr/local/go/bin"
     go_home_dir: "{{ lookup('env','HOME') }}/go"
     project_dir: "{{ go_home_dir }}/src/github.com/alex1ai/ugr-master-cc"
+    port: 3000
   environment:
-    PORT: "80"
+    PORT: "{{ port }}"
     IP: "0.0.0.0"
   tasks:
   - name: Update packages
@@ -46,6 +47,11 @@
       src: '{{ go_dir }}/go'
       state: link
 
+  - name: "Add Portforwarding from 80 to {{ port }}"
+    become: true
+    become_method: sudo
+    command: "iptables -t nat -I PREROUTING -p tcp --dport 80 -j REDIRECT --to-ports {{ port }}"
+
   - name: Get dependencies for project
     shell:
       cmd: "go get -d"
@@ -57,4 +63,4 @@
       chdir: "{{ project_dir }}"
 
   - name: Run webservice in different process
-    shell: "{{ go_home_dir }}/bin/ugr-master-cc &"
+    shell: "{{ go_home_dir }}/bin/ugr-master-cc > /dev/null &"
