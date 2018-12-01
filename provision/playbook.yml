@@ -18,6 +18,11 @@
     become: true
     become_method: sudo
     apt: pkg=git state=present
+  
+  - name: Install daemon
+    become: true
+    become_method: sudo
+    apt: pkg=daemon state=present
 
   - name: Download and extract Go
     become: true
@@ -53,14 +58,17 @@
     command: "iptables -t nat -I PREROUTING -p tcp --dport 80 -j REDIRECT --to-ports {{ port_nr }}"
 
   - name: Get dependencies for project
-    shell:
+    command:
       cmd: "go get -d"
       chdir: "{{ project_dir }}"
 
   - name: Install project
-    shell:
+    command:
       cmd: "go install"
       chdir: "{{ project_dir }}"
+  
+  - name: Kill old server if running
+    shell: "if pgrep ugr-master-cc; then pkill ugr-master-cc; fi"
 
   - name: Run webservice in different process
-    shell: "{{ go_home_dir }}/bin/ugr-master-cc > /tmp/log.log &"
+    shell: "daemon -- {{ go_home_dir }}/bin/ugr-master-cc"
