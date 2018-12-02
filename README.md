@@ -24,13 +24,12 @@ This service stores the data which will be requested (get) by the Android-App, a
 ## Deployment
 Deployment https://infogration.now.sh
 
-While there are different PaaS deployment services out there, I chose [zeit.co](https://zeit.co/) as it offers nice tutorials and a lightweight deployment mechanism. Furthermore it offers intergration of Docker (i.e. I can use any language I want besides Node/JS, which others offer exclusively), CI-support of Travis for automatic testing, and Github-Integration which deploys by pushing to master (if configured this way). 
+While there are different PaaS deployment services out there, I chose [zeit.co](https://zeit.co/) as it offers nice tutorials and a lightweight deployment mechanism. Furthermore it offers integration of Docker (i.e. I can use any language I want besides Node/JS, which others offer exclusively), CI-support of Travis for automatic testing, and Github-Integration which deploys by pushing to master (if configured this way). 
 **No configuration is needed** if you want to use Now. Everything is build automatically and aliased as _infogration_ if someone pushes to master or via Pull Requests. 
-Deployment through _Now_ is part of **Travis** execution after it passed all tests. If the tests fail, there will be no new deployment
+Deployment through _Now_ is part of **Travis** execution after it passed all tests. If the tests fail, there will be no new deployment.
 
-## Further Tools (will be included in the near future)
-- **Vagrant** is used to automate creation of virtual machines. It allows automation of creation of VMs and it management via a config file.
-I will probably use two machines, one for the REST-API and one for the data base.
-Default system will be Ubuntu 18.04
-- **Docker** will add another layer of abstraction to this system and adds scalabillity.
+## Provision
 
+For easy provisioning on any virtual machine of this webservice, I chose Ansible for its configuration management. Ansible works, in contrast to e.g. Puppet, in a push-way and is a good choice for this kind of project because one doesn't need to install anything on the Client-vm.   
+This Project is deployed in Microsoft's Azure cloud with a low-resourced VM. 
+How to provision to your cloud and more information about the chosen configuration can be found here. 
