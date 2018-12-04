@@ -62,3 +62,10 @@ Executing it from the command line from the provision folder looks like this:
 Calling the ip from azure via browser indicates a running webservice:
 
 ![Image running service](./provision/running.png)
+
+## Project Extension
+
+In order to go along with the project next to the CC-hitos, I implemented a logging-service for all requests and responses.
+As the golang "log"-library is really basic (only has log-levels error/panic/fatal), and we want to document more about what is going on in the webservce (info/warning) I chose [Logrus](https://github.com/Sirupsen/logrus) as it has an active community and a lot of features for improved logging.
+As it is api-compatible with the native logger of Go, all it needed basically was to import the package via 
+`import log github.com/sirupsen/logrus` and install the package locally via `go get github.com/sirupsen/logrus`.
