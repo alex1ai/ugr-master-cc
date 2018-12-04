@@ -4,11 +4,21 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/gorilla/mux"
-	"log"
+	log "github.com/sirupsen/logrus"
 	"net/http"
 	"os"
 	"strconv"
 )
+
+func initLogger(fileName string) *os.File {
+	file, err := os.OpenFile(fileName, os.O_RDWR|os.O_CREATE|os.O_APPEND, 0666)
+	if err != nil {
+		log.Fatalf("error opening file: %v", err)
+	}
+	log.SetOutput(file)
+	return file
+
+}
 
 func getDB() DummyData {
 	db := new(DummyData)
@@ -21,10 +31,15 @@ func getDB() DummyData {
 
 // Helper functions
 func jsonWrapper(status int, data InstancePackage) []byte {
+
 	j, err := json.Marshal(JSONResponse{http.StatusText(status), data})
 	if err != nil {
-		return jsonWrapper(http.StatusBadRequest, InstancePackage{})
+		j = jsonWrapper(http.StatusBadRequest, InstancePackage{})
 	}
+	log.WithFields(log.Fields{
+		"status": status,
+		"data":   string(j),
+	}).Info("HTML Response")
 	return j
 }
 
@@ -35,6 +50,7 @@ func sendResponse(writer http.ResponseWriter, status int, data InstancePackage) 
 	writer.WriteHeader(status)
 	writer.Write(jsonWrapper(status, data))
 }
+
 
 func RootHandler(w http.ResponseWriter, _ *http.Request) {
 	sendResponse(w, http.StatusOK, nil)
@@ -119,6 +135,7 @@ func AddInstanceHandler(w http.ResponseWriter, r *http.Request) {
 
 func ErrorHandler(w http.ResponseWriter, r *http.Request) {
 	http.Error(w, "This is not the page you are looking for", http.StatusNotFound)
+	log.Warnf("Page not found: %s", r.URL.Path)
 }
 
 func Router() *mux.Router {
@@ -134,19 +151,25 @@ func Router() *mux.Router {
 	return r
 }
 
-func main() {
+func getEnv(key string, def string) string {
+	value := os.Getenv(key)
+	if value == "" {
+		value = def
+	}
+	return value
+}
 
+func main() {
+	port := getEnv("PORT", "3000")
+	ip := getEnv("IP", "0.0.0.0")
+	home := os.Getenv("HOME")
+	logPath := getEnv("LOG_FILE", home+"/logfile.log")
+	logFile := initLogger(logPath)
+	defer logFile.Close()
 	// Get Router
 	r := Router()
 
-	port := os.Getenv("PORT")
-	if port == "" {
-		port = "3000"
-	}
-	ip := os.Getenv("IP")
-	if ip == "" {
-		ip = "0.0.0.0"
-	}
+	log.Infof("Starting server on %s:%s", ip, port)
 	// Bind to a port and pass our router in
 	log.Fatal(http.ListenAndServe(fmt.Sprintf("%s:%s", ip, port), r))
 }
