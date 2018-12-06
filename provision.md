@@ -21,6 +21,16 @@ I chose one of the smalles VM configurations possible (Azure B1s):
 
 ![Azure screenshot](./provision/azure.png)
 
+### Why Ubuntu 18.04 LTS?
+
+The choice of Linux, in contrast to Windows, is logical as many programming packages are not even available for Windows and we can use bash for scripting, which I know. This is also the reason why most of internet webservers use any Linux distribution.
+
+So which Linux to chose? Debian-based (Debian/Ubuntu/..), Red Hat-based (CentOs/Fedora...) or FreeBSD? [This](https://www.makeuseof.com/tag/best-linux-server-operating-systems/) nice read introduces some differences between the distros.
+Here I chose a Debian based image because, as stated in the link, Debian is known for being the most stable distribution out there. Furthermore the APT package manager is, in my subjective opinion, one of the most powerful with nearly every required package included.
+So why Ubuntu and not Debian itself? Well, Debian does not have a server-only image to use directly, this means any image will ship with a GUI/window manager such as GNOME. This is unnecessary in a server-only deployment and would increase the size of the raw image. 
+And, last but now least, why Version 18.04 LTS? Well, choosing a LTS version is always a smart choice if one does not want to update the OS every year. I also like to say, new is always better, which is why I chose 18.04 over previous LTS versions. Furthermore 18.04 finally uses python3 as default python, which I (and Ansible since the latest versions) prefer.
+
+As this project is written in Go, I also need to respect its [requirements](https://golang.org/doc/install), which means kFreeBSD/Debian GNU are not supported, just as CentOS and RHEL 5.x. 
 ## Ansible
 
 For configuration management of virtual machines I chose Ansible as we did have a dedicated seminar about it in class and I liked its handling a little more then, for example, chef.
