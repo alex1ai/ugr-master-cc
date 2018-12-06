@@ -69,3 +69,12 @@ In order to go along with the project next to the CC-hitos, I implemented a logg
 As the golang "log"-library is really basic (only has log-levels error/panic/fatal), and we want to document more about what is going on in the webservce (info/warning) I chose [Logrus](https://github.com/Sirupsen/logrus) as it has an active community and a lot of features for improved logging.
 As it is api-compatible with the native logger of Go, all it needed basically was to import the package via 
 `import log github.com/sirupsen/logrus` and install the package locally via `go get github.com/sirupsen/logrus`.
+
+## Checking playbook of other student
+
+To ensure that everybody can build the webservice on his VM, we check our playbooks by deploying the project of another student.
+Sergio Samaniego Martinez ran my playbook successfully, as documented on his [page](https://github.com/samahetfield/PersonalCC-1819/blob/master/docs/hito3.md).
+
+Next, I also downloaded his playbook from his repository and ran it on my Azure VM (after killing running process of my application to make the port available). The result can be seen in the following picture.
+
+![Image sergio playbook](./provision/playbook-sergio.png)
