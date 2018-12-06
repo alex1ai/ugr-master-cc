@@ -34,4 +34,4 @@ For easy provisioning on any virtual machine of this webservice, I chose Ansible
 This Project is deployed in Microsoft's Azure cloud with a low-resourced VM. 
 How to provision to your cloud and more information about the chosen configuration can be found [here](https://github.com/alex1ai/ugr-master-cc/blob/gh-pages/provision.md). 
 
-MV: 13.81.57.59
+MV: 51.144.231.53
