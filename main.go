@@ -151,6 +151,15 @@ func Router() *mux.Router {
 	return r
 }
 
+func loggingMiddleware(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		// Do stuff here
+		log.Info(r.RequestURI)
+		// Call the next handler, which can be another middleware in the chain, or the final handler.
+		next.ServeHTTP(w, r)
+	})
+}
+
 func getEnv(key string, def string) string {
 	value := os.Getenv(key)
 	if value == "" {
@@ -168,6 +177,9 @@ func main() {
 	defer logFile.Close()
 	// Get Router
 	r := Router()
+
+	// Add middleware
+	r.Use(loggingMiddleware)
 
 	log.Infof("Starting server on %s:%s", ip, port)
 	// Bind to a port and pass our router in
