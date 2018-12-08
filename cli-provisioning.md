@@ -19,7 +19,7 @@ which measures the latency to all available server locations from Azure cloud fr
 
 For Granada the (currently) best locations are :
 
-![Latency Azure](./vm/azure-lat.png]
+![Latency Azure](./vm/azure-lat.png)
 
 Obviously France Central is the winner here. Next, I checked if the service of VMs is available there at [this](https://azure.microsoft.com/de-de/global-infrastructure/services/?products=virtual-machines&regions=us-east,us-east-2,us-central,us-north-central,us-south-central,us-west-central,us-west,us-west-2,europe-north,europe-west,united-kingdom-south,united-kingdom-west,france-central,france-south) page: 
 
