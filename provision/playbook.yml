@@ -1,28 +1,38 @@
 ---
-- hosts: azure
+- hosts: all 
   vars:
     go_dir: "/usr/local/go/bin"
     go_home_dir: "{{ lookup('env','HOME') }}/go"
     project_dir: "{{ go_home_dir }}/src/github.com/alex1ai/ugr-master-cc"
     port_nr: 3000
+    packages: ["git", "daemon"]
   environment:
     PORT: "{{ port_nr }}"
     IP: "0.0.0.0"
   tasks:
-  - name: Update packages
-    become: true
+  - name: install system updates for centos systems
+    become: yes
     become_method: sudo
-    apt: update_cache=yes
+    yum: name=* state=latest update_cache=yes
+    when: ansible_facts['distribution'] == "CentOS"
 
-  - name: Install Git
+  - name: install system updates for debian-based systems
+    become: yes
+    become_method: sudo
+    apt: upgrade=dist update_cache=yes
+    when: ansible_facts['os_family'] == "Debian"
+
+  - name: Install git 
     become: true
     become_method: sudo
-    apt: pkg=git state=present
+    action: >
+      {{ ansible_pkg_mgr }} name=git state=present
   
-  - name: Install daemon
+  - name: Install daemon on debian based system
     become: true
     become_method: sudo
-    apt: pkg=daemon state=present
+    apt: name=daemon state=present
+    when: ansible_facts['os_family'] == "Debian"
 
   - name: Download and extract Go
     become: true
@@ -32,6 +42,14 @@
       dest: /usr/local/
       remote_src: yes
       creates: /usr/local/go
+
+  - name: Add Go-binary to environment
+    become: true
+    become_method: sudo
+    file:
+      dest: '/usr/bin/go'
+      src: '{{ go_dir }}/go'
+      state: link
 
   - name: Create Source Path for Github-Project
     file:
@@ -44,13 +62,6 @@
       repo: 'https://github.com/alex1ai/ugr-master-cc.git'
       dest: "{{ project_dir }}"
 
-  - name: Add Go-binary to environment
-    become: true
-    become_method: sudo
-    file:
-      dest: '/usr/bin/go'
-      src: '{{ go_dir }}/go'
-      state: link
 
   - name: "Add Portforwarding from 80 to {{ port_nr }}"
     become: true
@@ -71,4 +82,5 @@
     shell: "if pgrep ugr-master-cc; then pkill ugr-master-cc; fi"
 
   - name: Run webservice in different process
-    shell: "daemon -- {{ go_home_dir }}/bin/ugr-master-cc"
+    shell: "daemon -- {{ go_home_dir }}/bin/ugr-master-cc || nohup {{ go_home_dir }}/bin/ugr-master-cc > /dev/null 2>&1 &" 
+    ignore_errors: true
