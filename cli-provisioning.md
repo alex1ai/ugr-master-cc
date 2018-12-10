@@ -3,14 +3,14 @@
 At first we used the browser's GUI to create a virtual machine in the cloud, for example at Azure or Google Cloud. 
 In the next step we want to make it an automatic, repeatable task by using the CLI from the respective cloud provider.
 
-At first I run everything on the Azure Cloud, later we might provision Google Cloud Platform as well.
-
 ## Server location & Operating System
 
 When creating and running a web server, the very first questions are:
  1. Location of the server (latency/data laws)
  2. Resources which will be accessible 
  3. OS to run
+
+For the following I chose Azure cloud as provider because we have the most credit there and I have done some work with it now. I will provide a script to provision in _Google Cloud_ as well, just to use their CLI once as well.
 
 ### Location
 Let's start with the location of the server. I found [this](https://www.petri.com/tips-choosing-microsoft-azure-region) website which offers 
@@ -42,7 +42,34 @@ Of course, with some more resources we might get some extra speed on responses (
 In this case Azure B1s with _(1GB RAM/ 1 vCPU)_ and _20GB of SSD Standard_ storage is sufficient and cheap.
 
 ### Operating systems
-In the last milestone I already stated a few reasons for choosing the right OS for the application. 
+[In the last milestone](https://github.com/alex1ai/ugr-master-cc/blob/gh-pages/provision.md) I already stated a few reasons for choosing the right OS for the application. 
 After eliminating systems you can not use (software restrictions) or are overly complicated, you just have to choose one and see how your service works.
 
+For this I made some experiments with ApacheBench to see how fast the OS can handle the service. 
+First I had to install it (locally on fedora) via `dnf install httpd-tools`. With this done I wrote a script:
 
+It assmues that _ApacheBench_, _Ansible_ and _az_ are installed and properly setup. 
+
+ApacheBench uses 500 request with concurrency of 200. Unfortunately, I could not use mucher higher values because at some time my internet at home just keeps loosing packages and _ab_ breaks...
+
+`ab -n 500 -c 200 http://{{dns_address}:80/`
+
+Yet the go application is really fast if one executes it on the localhost (fedora 29):
+
+`ab -n 5000 -c 500 localhost:3000/` 
+
+with ~8700 #Requests/second (approximate average over 5 runs)
+
+**Results of different operating systems in Azure**
+
+| OS         | Version   | Requests/min | Setup time |
+|------------|-----------|--------------|------------|
+| CentOS     | 7.5       |              |            |
+| CentOS-min | 7.0       |              |            |
+| Debian     | 8         |              |            |
+| Debian     | 9         |              |            |
+| Ubuntu     | 16.04 LTS |              |            |
+| Ubuntu     | 18.04 LTS |              |            |
+| RHEL       | 7-RAW     |              |            |
+
+As a restult of the speed test and the other factors, named [here](https://github.com/alex1ai/ugr-master-cc/blob/gh-pages/provision.md), I chose ..... as the operating system for automatic vm creation in the acopio.sh script.
