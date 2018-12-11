@@ -1,7 +1,7 @@
 #!/bin/bash
 set -e
 
-images=( "centos" "debian" "ubuntults" "Canonical:UbuntuServer:18.04-LTS:latest" "credativ:Debian:9:latest"  "RHEL")
+images=( "CentOS" "Debian" "UbuntuLTS")
 group="OSTest"
 location="francecentral"
 
@@ -19,13 +19,13 @@ export ANSIBLE_HOST_KEY_CHECKING=false
 
 for i in "${images[@]}" 
 do
-		dnsserver="$i-dns"
+		dnsserver="rhel-dns"
 		name="server-$i"
 		SECONDS=0
 		if [ -z "$(az vm list -g $group | jq '.[] | .name' | grep "$name" )" ]
 		then
 		  echo "Creating $i server "
-		  j=$(az vm create -n $name -g $group --image $i --size Standard_B1s --data-disk-sizes-gb 20 --public-ip-address-dns-name $dnsserver)
+		  j=$(az vm create -n $name -g $group --image $i --size Standard_B2s --data-disk-sizes-gb 20 --public-ip-address-dns-name $dnsserver)
 		  echo $j | jq '.publicIpAddress' > iptmp.txt
 		else 
 	      echo "VM exists"
@@ -57,3 +57,5 @@ done
 # Delete all resources
 echo "Deleting resource group"
 az group delete -g $group --no-wait --yes
+
+rm iptmp.txt

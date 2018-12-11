@@ -14,7 +14,7 @@
     become: yes
     become_method: sudo
     yum: name=* state=latest update_cache=yes
-    when: ansible_facts['distribution'] == "CentOS"
+    when: ansible_facts['os_family'] == "RedHat"
 
   - name: install system updates for debian-based systems
     become: yes
