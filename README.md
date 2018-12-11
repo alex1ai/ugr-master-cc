@@ -18,8 +18,7 @@ This service stores the data which will be requested (get) by the Android-App, a
 - Go REST-API for communication with App and GUI, I use [Gorilla Mux](https://github.com/gorilla/mux) router as this is the mostly used one in Go. (Service #1)
 - Messenger-service between the microservices will be [RabbitMQ](https://github.com/streadway/amqp) as this 'is the most widely deployed open source message broker'.
 - SQL data storage service with PostgreSQL, will run as a stand-alone service with REST (Serivce #2)
-- Authentication of normal users (get info only) and admins (edit content) (Service #3)
-- Optional: Use Google-Translate-API to get translations for content we could not translate manually (Service #4)
+- Authentication of normal users (get info only) and admins (edit content) (Middleware)
 
 ## Deployment
 Deployment https://infogration.now.sh
@@ -34,4 +33,6 @@ For easy provisioning on any virtual machine of this webservice, I chose Ansible
 This Project is deployed in Microsoft's Azure cloud with a low-resourced VM. 
 How to provision to your cloud and more information about the chosen configuration can be found [here](https://github.com/alex1ai/ugr-master-cc/blob/gh-pages/provision.md). 
 
-MV: 51.144.231.53
+MV: 20.188.34.125
+
+As of milestone 4, we can create VMs in Azure automatically via `acopio.sh`. [This](https://github.com/alex1ai/ugr-master-cc/blob/gh-pages/cli-provisioning.md) provides all the documentation and justification for the chosen image, ressources and location. Currently the server is running on Ubuntu 16.04 LTS in France-Central on a cheap virtual machine (B1s).
