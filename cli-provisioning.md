@@ -10,7 +10,7 @@ When creating and running a web server, the very first questions are:
  2. Resources which will be accessible 
  3. OS to run
 
-For the following I chose Azure cloud as provider because we have the most credit there and I have done some work with it now. I will provide a script to provision in _Google Cloud_ as well, just to use their CLI once as well.
+For the following I chose Azure cloud as provider because we have the most credit there and I have done some work with it now. 
 
 ### Location
 Let's start with the location of the server. I found [this](https://www.petri.com/tips-choosing-microsoft-azure-region) website which offers 
@@ -50,26 +50,22 @@ First I had to install it (locally on fedora) via `dnf install httpd-tools`. Wit
 
 It assmues that _ApacheBench_, _Ansible_ and _az_ are installed and properly setup. 
 
-ApacheBench uses 500 request with concurrency of 200. Unfortunately, I could not use mucher higher values because at some time my internet at home just keeps loosing packages and _ab_ breaks...
+ApacheBench uses 500 request with concurrency of 200. Unfortunately, I could not use higher values because at some time my internet at home just keeps loosing packages and _ab_ breaks. Furthermore the selection of B1s limits the concurrency of course (1 vCPU), but this API does not expect hundreds of requests per second. If at some point it SHOULD, we only have to change the VM size - scalability at its best.
 
 `ab -n 500 -c 200 http://{{dns_address}:80/`
 
-Yet the go application is really fast if one executes it on the localhost (fedora 29):
+Running the go application on my laptop on localhost (i7, 8gb RAM, SSD, Fedora 29), it is really fast:
 
 `ab -n 5000 -c 500 localhost:3000/` 
 
-with ~8700 #Requests/second (approximate average over 5 runs)
+tests with ~8700 #Requests/second (approximate average over 5 runs)
 
 **Results of different operating systems in Azure**
 
-| OS         | Version   | Requests/min | Setup time |
+| OS         | Version   | Requests/sec | Setup time (s) |
 |------------|-----------|--------------|------------|
-| CentOS     | 7.5       |              |            |
-| CentOS-min | 7.0       |              |            |
-| Debian     | 8         |              |            |
-| Debian     | 9         |              |            |
-| Ubuntu     | 16.04 LTS |              |            |
-| Ubuntu     | 18.04 LTS |              |            |
-| RHEL       | 7-RAW     |              |            |
+| CentOS     | 7.5       |    57.77     |    558     |
+| Debian     | 8         |    54.98     |    517     |
+| Ubuntu     | 16.04 LTS |    71.44     |    279     |
 
-As a restult of the speed test and the other factors, named [here](https://github.com/alex1ai/ugr-master-cc/blob/gh-pages/provision.md), I chose ..... as the operating system for automatic vm creation in the acopio.sh script.
+As a result of the speed test and the other factors, named [here](https://github.com/alex1ai/ugr-master-cc/blob/gh-pages/provision.md), I chose **ubuntuLTS** as the operating system for automatic vm creation in the acopio.sh script.
