@@ -52,7 +52,7 @@ It assmues that _ApacheBench_, _Ansible_ and _az_ are installed and properly set
 
 ApacheBench uses 500 request with concurrency of 200. Unfortunately, I could not use higher values because at some time my internet at home just keeps loosing packages and _ab_ breaks. Furthermore the selection of B1s limits the concurrency of course (1 vCPU), but this API does not expect hundreds of requests per second. If at some point it SHOULD, we only have to change the VM size - scalability at its best.
 
-`ab -n 500 -c 200 http://{{dns_address}:80/`
+`ab -n 500 -c 200 http://dns_address:80/`
 
 Running the go application on my laptop on localhost (i7, 8gb RAM, SSD, Fedora 29), it is really fast:
 
