@@ -8,7 +8,7 @@ playbook_path="./provision/playbook.yml"
 ex=$(az group exists -n $group )
 echo "Group does exist: $ex"
 
-if [ "$ex" == "false" ]; then
+if [[ "$ex" == "false" ]]; then
 	echo "Creating group $group in $location"
 	az group create -l $location -n $group
 fi
