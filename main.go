@@ -5,7 +5,9 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/gorilla/mux"
+	"github.com/mongodb/mongo-go-driver/bson"
 	"github.com/mongodb/mongo-go-driver/mongo"
+	"github.com/mongodb/mongo-go-driver/mongo/options"
 	"github.com/mongodb/mongo-go-driver/mongo/readpref"
 	log "github.com/sirupsen/logrus"
 	"net/http"
@@ -18,12 +20,15 @@ import (
 const (
 	MongoPort  = 27017
 	MongoIp    = "localhost"
-	Database   = "info"
-	Collection = "content"
 	DEBUG      = true
 
-	LangRegex = "^\\w{2}"
+	LangRegex = "^[a-z]{2}$"
 	IdRegex   = "^[1-9][0-9]*"
+)
+
+var (
+	Database = "info"
+	Collection = "content"
 )
 
 func initLogger(fileName string) *os.File {
@@ -44,6 +49,8 @@ func initializeDatabase(ip string, port int) (client *mongo.Client, err error) {
 	log.Infof("Connecting to Mongo Database, make sure it is running on %s:%d", ip, port)
 	ctx, _ := context.WithTimeout(context.Background(), 10*time.Second)
 	client, err = mongo.Connect(ctx, fmt.Sprintf("mongodb://%s:%d", MongoIp, MongoPort))
+
+	// Test reaching the DB
 	ctx, _ = context.WithTimeout(context.Background(), 2*time.Second)
 	err = client.Ping(ctx, readpref.Primary())
 	return
@@ -74,10 +81,10 @@ func jsonWrapper(status int, data InstancePackage) []byte {
 
 // Route-Handlers
 
-func sendResponse(writer http.ResponseWriter, status int, data InstancePackage) {
+func sendResponse(writer http.ResponseWriter, status int, data []byte) {
 	writer.Header().Set("ContentNew-Type", "application/json")
 	writer.WriteHeader(status)
-	writer.Write(jsonWrapper(status, data))
+	writer.Write(data)
 }
 
 func errorPanic(w http.ResponseWriter, err error) {
@@ -103,14 +110,17 @@ func validateLang(lang string) (matches bool, empty bool) {
 	return ok, lang == ""
 }
 
-func populateDB(c *mongo.Client) {
+func populateDB(c *mongo.Client, instances int) {
 	collection := c.Database(Database).Collection(Collection)
 
 	ctx, _ := context.WithTimeout(context.Background(), 10*time.Second)
-	content := ContentNew{"q1", "a1", 2, "en", "work", 1234}
-
-	res, err := collection.InsertOne(ctx, content)
-	log.Debug(res, err)
+	for i := 0; i < instances; i++{
+		content := createDummyContent()
+		_, err := collection.InsertOne(ctx, content)
+		if err != nil {
+			log.Debug(err)
+		}
+	}
 
 }
 
@@ -169,27 +179,32 @@ func RootHandler(w http.ResponseWriter, _ *http.Request) {
 	w.Write([]byte("{\"status\": \"OK\"}"))
 }
 
+func PostHandler(c *mongo.Client) func(w http.ResponseWriter, r *http.Request) {
+	return func(w http.ResponseWriter, r *http.Request) {
+		decoder := json.NewDecoder(r.Body)
 
-func PostByIdHandler(w http.ResponseWriter, r *http.Request) {
-	db := getDB()
-	decoder := json.NewDecoder(r.Body)
-	status := http.StatusOK
-	var ip InstancePackage
-	if err := decoder.Decode(&ip); err != nil {
-		status, ip = http.StatusBadRequest, InstancePackage{}
-	} else {
-		for _, j := range ip {
-			id, lang := j.Content.Id, j.Language
-			_, exists := db.getById(id, lang)
-			// This (lang,id) is not yet known -> Put
-			if !exists {
-				db.addInstance(j)
-			} else { // It is already known -> Update
-				db.updateById(id, lang, j)
-			}
+		var instance ContentNew
+		if err := decoder.Decode(&instance); err != nil || !instance.validate(){
+			http.Error(w, err.Error(), http.StatusBadRequest)
+		}
+
+		id, lang := instance.Id, instance.Language
+
+		ctx, _ := context.WithTimeout(context.Background(), 10*time.Second)
+		coll := c.Database(Database).Collection(Collection)
+
+		opts := options.ReplaceOptions{}
+		// If lang and id not there yet, this represents the same as a PUT request, i.e. creating a new Document
+		opts.SetUpsert(true)
+		res, err := coll.ReplaceOne(ctx, bson.M{"lang": lang, "id": id}, instance, &opts)
+		errorPanic(w, err)
+
+		if res.UpsertedID != nil {
+			sendResponse(w, http.StatusCreated, nil)
+		} else {
+			sendResponse(w, http.StatusNoContent, nil)
 		}
 	}
-	sendResponse(w, status, ip)
 }
 
 func DeleteByIdHandler(w http.ResponseWriter, r *http.Request) {
@@ -221,7 +236,7 @@ func AddInstanceHandler(w http.ResponseWriter, r *http.Request) {
 			}
 		}
 	}
-	sendResponse(w, status, ip)
+	sendResponse(w, status, nil)
 }
 
 func ErrorHandler(w http.ResponseWriter, r *http.Request) {
@@ -231,12 +246,11 @@ func ErrorHandler(w http.ResponseWriter, r *http.Request) {
 
 func Router(client *mongo.Client) *mux.Router {
 	r := mux.NewRouter()
-	r.HandleFunc("/content", GetHandler(client)).
-		Methods("GET").
+	r.HandleFunc("/content", GetHandler(client)).Methods("GET").
 		Queries("lang", "{lang}", "id", "{id:[0-9]*}")
 	r.HandleFunc("/content", GetHandler(client)).Methods("GET")
 	r.HandleFunc("/content/{lang}/{id}", DeleteByIdHandler).Methods("DELETE")
-	r.HandleFunc("/content", PostByIdHandler).Methods("POST")
+	r.HandleFunc("/content", PostHandler(client)).Methods("POST")
 	r.HandleFunc("/content", AddInstanceHandler).Methods("PUT")
 	r.HandleFunc("/", RootHandler)
 	r.HandleFunc("/{.*}", ErrorHandler)
@@ -262,6 +276,12 @@ func getEnv(key string, def string) string {
 	return value
 }
 
+func dropDB(client *mongo.Client) {
+	ctx, _ := context.WithTimeout(context.Background(), 10*time.Second)
+	client.Database(Database).Drop(ctx)
+	log.Debug("Dropped database")
+}
+
 func main() {
 
 	port := getEnv("PORT", "3000")
@@ -278,7 +298,13 @@ func main() {
 		panic(err)
 	}
 
-	//populateDB(client)
+	//dropDB(client)
+	// Randomly init database TODO: delete
+	//for i := 0; i < 10; i++{
+	//	populateDB(client)
+	//}
+	//log.Debug("Created 10 instances")
+	//os.Exit(0)
 	// Get 	Router
 	r := Router(client)
 

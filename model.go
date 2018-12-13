@@ -3,6 +3,7 @@ package main
 import (
 	"encoding/json"
 	"fmt"
+	"math/rand"
 	"strconv"
 	"time"
 )
@@ -17,12 +18,24 @@ type LangRegistry struct {
 }
 
 type ContentNew struct {
-	Question  string `bson:"q, omitempty"`
-	Answer    string `bson:"a, omitempty"`
-	Id        uint   `bson:"id, omitempty"`
-	Language  string `bson:"lang, omitempty"`
-	Category  string `bson:"cat, omitempty"`
-	CreatedAt uint   `bson:"time, omitempty"`
+	Question  string    `bson:"q, omitempty" json:"question"`
+	Answer    string    `bson:"a, omitempty" json:"answer"`
+	Id        uint      `bson:"id, omitempty" json:"id"`
+	Language  string    `bson:"lang, omitempty" json:"lang"`
+	Category  string    `bson:"cat, omitempty" json:"category"`
+	CreatedAt time.Time `bson:"time, omitempty" json:"created_at"`
+}
+
+func createDummyContent() ContentNew{
+	id := rand.Intn(20)
+	langs := []string{"de", "en", "es", "ar"}
+	lang := langs[rand.Intn(len(langs))]
+	created := time.Now()
+	return ContentNew{"test 1", "test1 answer", uint(id), lang, "work", created}
+}
+
+func (c *ContentNew) validate() bool {
+	return true
 }
 
 func newLangRegistry() *LangRegistry {
