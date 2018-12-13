@@ -47,19 +47,17 @@ func setupDB(t *testing.T) {
 
 func TestGetHandler(t *testing.T) {
 	tt := []struct {
-		lang   string
-		id string
+		lang       string
+		id         string
 		shouldPass bool
 	}{
-		{"de", "1",true},
-		{"en", "2",true},
+		{"de", "1", true},
+		{"en", "2", true},
 		{"es", "-1", false},
 		{"", "", true},
 		{"de", "", true},
 		{"", "1", true},
 		{"asdf", "1", true},
-
-
 	}
 	setupDB(t)
 	for _, tc := range tt {
@@ -105,7 +103,6 @@ func TestDeleteByIdHandler(t *testing.T) {
 	}
 
 }
-
 
 func TestAddInstanceHandler(t *testing.T) {
 	i := InstancePackage{

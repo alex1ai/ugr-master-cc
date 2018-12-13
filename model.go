@@ -16,6 +16,15 @@ type LangRegistry struct {
 	ALL string
 }
 
+type ContentNew struct {
+	Question  string `bson:"q, omitempty"`
+	Answer    string `bson:"a, omitempty"`
+	Id        uint   `bson:"id, omitempty"`
+	Language  string `bson:"lang, omitempty"`
+	Category  string `bson:"cat, omitempty"`
+	CreatedAt uint   `bson:"time, omitempty"`
+}
+
 func newLangRegistry() *LangRegistry {
 	return &LangRegistry{
 		DE:  "de",

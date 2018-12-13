@@ -87,15 +87,6 @@ func errorPanic(w http.ResponseWriter, err error) {
 	}
 }
 
-type ContentNew struct {
-	Question  string `bson:"q, omitempty"`
-	Answer    string `bson:"a, omitempty"`
-	Id        uint   `bson:"id, omitempty"`
-	Language  string `bson:"lang, omitempty"`
-	Category  string `bson:"cat, omitempty"`
-	CreatedAt uint   `bson:"time, omitempty"`
-}
-
 func validateId(id string) (matches bool, empty bool) {
 	ok, err := regexp.MatchString(IdRegex, id)
 	if err != nil {
@@ -174,7 +165,8 @@ func GetHandler(c *mongo.Client) func(w http.ResponseWriter, r *http.Request) {
 }
 
 func RootHandler(w http.ResponseWriter, _ *http.Request) {
-	sendResponse(w, http.StatusOK, nil)
+	w.WriteHeader(http.StatusOK)
+	w.Write([]byte("{\"status\": \"OK\"}"))
 }
 
 
