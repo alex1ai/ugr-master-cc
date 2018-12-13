@@ -12,38 +12,22 @@ import (
 	log "github.com/sirupsen/logrus"
 	"net/http"
 	"os"
-	"regexp"
 	"strconv"
 	"time"
 )
 
 const (
-	MongoPort  = 27017
-	MongoIp    = "localhost"
-	DEBUG      = true
-
+	MongoPort = 27017
+	MongoIp   = "localhost"
+	DEBUG     = true
 	LangRegex = "^[a-z]{2}$"
 	IdRegex   = "^[1-9][0-9]*"
 )
 
 var (
-	Database = "info"
+	Database   = "info"
 	Collection = "content"
 )
-
-func initLogger(fileName string) *os.File {
-	if !DEBUG {
-		file, err := os.OpenFile(fileName, os.O_RDWR|os.O_CREATE|os.O_APPEND, 0666)
-		if err != nil {
-			log.Fatalf("error opening file: %v", err)
-		}
-		log.SetOutput(file)
-		return file
-	}
-	log.SetLevel(log.DebugLevel)
-	f := os.File{}
-	return &f
-}
 
 func initializeDatabase(ip string, port int) (client *mongo.Client, err error) {
 	log.Infof("Connecting to Mongo Database, make sure it is running on %s:%d", ip, port)
@@ -56,72 +40,15 @@ func initializeDatabase(ip string, port int) (client *mongo.Client, err error) {
 	return
 }
 
-func getDB() DummyData {
-	db := new(DummyData)
-	err := db.create()
-	if err != nil {
-		log.Fatal(err)
-	}
-	return *db
-}
-
-// Helper functions
-func jsonWrapper(status int, data InstancePackage) []byte {
-
-	j, err := json.Marshal(JSONResponse{http.StatusText(status), data})
-	if err != nil {
-		j = jsonWrapper(http.StatusBadRequest, InstancePackage{})
-	}
-	log.WithFields(log.Fields{
-		"status": status,
-		"data":   string(j),
-	}).Info("HTML Response")
-	return j
-}
-
-// Route-Handlers
-
 func sendResponse(writer http.ResponseWriter, status int, data []byte) {
-	writer.Header().Set("ContentNew-Type", "application/json")
+	writer.Header().Set("Content-Type", "application/json")
 	writer.WriteHeader(status)
 	writer.Write(data)
 }
 
-func errorPanic(w http.ResponseWriter, err error) {
-	if err != nil {
-		log.Fatal(err)
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-	}
-}
-
-func validateId(id string) (matches bool, empty bool) {
-	ok, err := regexp.MatchString(IdRegex, id)
-	if err != nil {
-		log.Debug(err.Error())
-	}
-	return ok, id == ""
-}
-
-func validateLang(lang string) (matches bool, empty bool) {
-	ok, err := regexp.MatchString(LangRegex, lang)
-	if err != nil {
-		log.Debug(err.Error())
-	}
-	return ok, lang == ""
-}
-
-func populateDB(c *mongo.Client, instances int) {
-	collection := c.Database(Database).Collection(Collection)
-
-	ctx, _ := context.WithTimeout(context.Background(), 10*time.Second)
-	for i := 0; i < instances; i++{
-		content := createDummyContent()
-		_, err := collection.InsertOne(ctx, content)
-		if err != nil {
-			log.Debug(err)
-		}
-	}
-
+// ROUTES FOR WEBSERVICE
+func RootHandler(w http.ResponseWriter, _ *http.Request) {
+	sendResponse(w, http.StatusOK, []byte("{\"status\": \"OK\"}"))
 }
 
 func GetHandler(c *mongo.Client) func(w http.ResponseWriter, r *http.Request) {
@@ -156,9 +83,9 @@ func GetHandler(c *mongo.Client) func(w http.ResponseWriter, r *http.Request) {
 
 		defer cur.Close(ctx)
 
-		response := make([]ContentNew, 1)
+		response := make([]Content, 1)
 		for cur.Next(ctx) {
-			var result ContentNew
+			var result Content
 			err := cur.Decode(&result)
 			errorPanic(w, err)
 			log.Debug(result.Language)
@@ -174,17 +101,12 @@ func GetHandler(c *mongo.Client) func(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func RootHandler(w http.ResponseWriter, _ *http.Request) {
-	w.WriteHeader(http.StatusOK)
-	w.Write([]byte("{\"status\": \"OK\"}"))
-}
-
 func PostPutHandler(c *mongo.Client) func(w http.ResponseWriter, r *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
 		decoder := json.NewDecoder(r.Body)
 
-		var instance ContentNew
-		if err := decoder.Decode(&instance); err != nil || !instance.validate(){
+		var instance Content
+		if err := decoder.Decode(&instance); err != nil || !instance.validate() {
 			http.Error(w, err.Error(), http.StatusBadRequest)
 		}
 
@@ -257,26 +179,12 @@ func loggingMiddleware(next http.Handler) http.Handler {
 	})
 }
 
-func getEnv(key string, def string) string {
-	value := os.Getenv(key)
-	if value == "" {
-		value = def
-	}
-	return value
-}
-
-func dropDB(client *mongo.Client) {
-	ctx, _ := context.WithTimeout(context.Background(), 10*time.Second)
-	client.Database(Database).Drop(ctx)
-	log.Debug("Dropped database")
-}
-
 func main() {
 
 	port := getEnv("PORT", "3000")
 	ip := getEnv("IP", "0.0.0.0")
 	home := os.Getenv("HOME")
-	logPath := getEnv("LOG_FILE", home+"/logfile.log")
+	logPath := getEnv("LOG_FILE", home+"/logfile")
 	logFile := initLogger(logPath)
 	defer logFile.Close()
 
@@ -286,16 +194,9 @@ func main() {
 		log.Fatal(err)
 		panic(err)
 	}
+
 	defer client.Disconnect(context.Background())
 
-	//dropDB(client)
-	// Randomly init database TODO: delete
-	//for i := 0; i < 10; i++{
-	//	populateDB(client)
-	//}
-	//log.Debug("Created 10 instances")
-	//os.Exit(0)
-	// Get 	Router
 	r := Router(client)
 
 	// Add middleware

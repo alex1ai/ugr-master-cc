@@ -15,6 +15,19 @@ import (
 
 var client *mongo.Client
 
+func populateDB(c *mongo.Client, instances int) {
+	collection := c.Database(Database).Collection(Collection)
+
+	ctx, _ := context.WithTimeout(context.Background(), 10*time.Second)
+	for i := 0; i < instances; i++ {
+		content := createDummyContent()
+		_, err := collection.InsertOne(ctx, content)
+		if err != nil {
+			panic(err)
+		}
+	}
+}
+
 func setupDB(t *testing.T) {
 	var err error
 	if client == nil {
@@ -108,7 +121,7 @@ func TestDeleteHandler(t *testing.T) {
 		t.Error("could not put content in DB")
 	}
 
-	var other ContentNew
+	var other Content
 	err = conn.FindOne(context.Background(), bson.M{"lang": content.Language, "id": content.Id}).Decode(&other)
 
 	if err != nil {
