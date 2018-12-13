@@ -179,7 +179,7 @@ func RootHandler(w http.ResponseWriter, _ *http.Request) {
 	w.Write([]byte("{\"status\": \"OK\"}"))
 }
 
-func PostHandler(c *mongo.Client) func(w http.ResponseWriter, r *http.Request) {
+func PostPutHandler(c *mongo.Client) func(w http.ResponseWriter, r *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
 		decoder := json.NewDecoder(r.Body)
 
@@ -196,47 +196,33 @@ func PostHandler(c *mongo.Client) func(w http.ResponseWriter, r *http.Request) {
 		opts := options.ReplaceOptions{}
 		// If lang and id not there yet, this represents the same as a PUT request, i.e. creating a new Document
 		opts.SetUpsert(true)
-		res, err := coll.ReplaceOne(ctx, bson.M{"lang": lang, "id": id}, instance, &opts)
+		_, err := coll.ReplaceOne(ctx, bson.M{"lang": lang, "id": id}, instance, &opts)
 		errorPanic(w, err)
 
-		if res.UpsertedID != nil {
-			sendResponse(w, http.StatusCreated, nil)
-		} else {
-			sendResponse(w, http.StatusNoContent, nil)
-		}
+		sendResponse(w, http.StatusNoContent, nil)
+
 	}
 }
 
-func DeleteByIdHandler(w http.ResponseWriter, r *http.Request) {
-	id, _ := mux.Vars(r)["id"]
-	lang, _ := mux.Vars(r)["lang"]
-	db := getDB()
-	idNumber, err := strconv.Atoi(id)
-	if err != nil || idNumber < 0 {
-		sendResponse(w, http.StatusBadRequest, nil)
-	}
-	err = db.removeById(uint(idNumber), lang)
-	if err != nil {
-		sendResponse(w, http.StatusNotFound, nil)
-	}
-	sendResponse(w, http.StatusOK, nil)
-}
-
-func AddInstanceHandler(w http.ResponseWriter, r *http.Request) {
-	db := getDB()
-	decoder := json.NewDecoder(r.Body)
-	status := http.StatusOK
-	var ip InstancePackage
-	if err := decoder.Decode(&ip); err != nil {
-		status, ip = http.StatusBadRequest, InstancePackage{}
-	} else {
-		for _, j := range ip {
-			if _, exists := db.getById(j.Content.Id, j.Language); !exists {
-				db.addInstance(j)
-			}
+func DeleteHandler(c *mongo.Client) func(w http.ResponseWriter, r *http.Request) {
+	return func(w http.ResponseWriter, r *http.Request) {
+		id, _ := mux.Vars(r)["id"]
+		lang, _ := mux.Vars(r)["lang"]
+		idNumber, err := strconv.Atoi(id)
+		if err != nil || idNumber < 0 {
+			sendResponse(w, http.StatusBadRequest, nil)
 		}
+
+		ctx, _ := context.WithTimeout(context.Background(), 10*time.Second)
+		coll := c.Database(Database).Collection(Collection)
+
+		del, err := coll.DeleteOne(ctx, bson.M{"lang": lang, "id": uint(idNumber)})
+		log.Debug(del.DeletedCount)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+		}
+		sendResponse(w, http.StatusNoContent, nil)
 	}
-	sendResponse(w, status, nil)
 }
 
 func ErrorHandler(w http.ResponseWriter, r *http.Request) {
@@ -249,9 +235,12 @@ func Router(client *mongo.Client) *mux.Router {
 	r.HandleFunc("/content", GetHandler(client)).Methods("GET").
 		Queries("lang", "{lang}", "id", "{id:[0-9]*}")
 	r.HandleFunc("/content", GetHandler(client)).Methods("GET")
-	r.HandleFunc("/content/{lang}/{id}", DeleteByIdHandler).Methods("DELETE")
-	r.HandleFunc("/content", PostHandler(client)).Methods("POST")
-	r.HandleFunc("/content", AddInstanceHandler).Methods("PUT")
+
+	r.HandleFunc("/content", PostPutHandler(client)).Methods("POST")
+	r.HandleFunc("/content", PostPutHandler(client)).Methods("PUT")
+
+	r.HandleFunc("/content/{lang}/{id}", DeleteHandler(client)).Methods("DELETE")
+
 	r.HandleFunc("/", RootHandler)
 	r.HandleFunc("/{.*}", ErrorHandler)
 
@@ -297,6 +286,7 @@ func main() {
 		log.Fatal(err)
 		panic(err)
 	}
+	defer client.Disconnect(context.Background())
 
 	//dropDB(client)
 	// Randomly init database TODO: delete

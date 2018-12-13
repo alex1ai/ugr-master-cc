@@ -5,16 +5,6 @@ import (
 	"time"
 )
 
-func TestCreateDB(t *testing.T) {
-	db := getDB()
-	data, err := db.getByLanguage("all")
-	if err != nil {
-		t.Fatal(err)
-	}
-	if len(data) != 4 {
-		t.Fatal("Could not get all instances, was not initialized correctly")
-	}
-}
 
 func TestAddInstance(t *testing.T) {
 	db := getDB()
