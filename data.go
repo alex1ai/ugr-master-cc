@@ -1,10 +1,41 @@
 package main
 
 import (
+	"context"
 	"errors"
 	"fmt"
+	"github.com/mongodb/mongo-go-driver/mongo"
 	"time"
 )
+
+const(
+	MONGOIP   ="mongoIp"
+	MONGOPORT ="mongoPort"
+)
+
+type DBQuery struct{
+	Lang string
+	Id uint
+}
+
+type DB interface {
+	GetSize() int
+	setup(map[string]string) (interface{}, error)
+	add(...Instance) error
+	update(Instance) error
+	remove(Instance) error
+	get(...DBQuery) (InstancePackage, error)
+}
+
+type Mongo struct{}
+
+func (db Mongo) setup(pars map[string]string) (client interface{}, err error) {
+	port := pars[MONGOPORT]
+	ip:= pars[MONGOIP]
+	ctx, _ := context.WithTimeout(context.Background(), 10*time.Second)
+	client, err = mongo.Connect(ctx, fmt.Sprintf("mongodb://%s:%s", ip, port))
+	return
+}
 
 type DummyData struct {
 	instances InstancePackage
