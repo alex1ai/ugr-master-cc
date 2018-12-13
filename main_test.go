@@ -4,12 +4,15 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/google/go-cmp/cmp"
+	"github.com/mongodb/mongo-go-driver/mongo"
 	"net/http"
 	"net/http/httptest"
 	"strings"
 	"testing"
 	"time"
 )
+
+var client *mongo.Client
 
 func TestRootHandler(t *testing.T) {
 	// Create a request to pass to our handler. We don't have any query parameters for now, so we'll
@@ -34,17 +37,33 @@ func TestRootHandler(t *testing.T) {
 	}
 }
 
-func TestGetByIdHandler(t *testing.T) {
+func setupDB(t *testing.T) {
+	var err error
+	client, _ = initializeDatabase(MongoIp, MongoPort)
+	if err != nil {
+		t.Fatal(err)
+	}
+}
+
+func TestGetHandler(t *testing.T) {
 	tt := []struct {
-		variable   string
+		lang   string
+		id string
 		shouldPass bool
 	}{
-		{"de", false},
-		{"en", true},
-		{"es", true},
+		{"de", "1",true},
+		{"en", "2",true},
+		{"es", "-1", false},
+		{"", "", true},
+		{"de", "", true},
+		{"", "1", true},
+		{"asdf", "1", true},
+
+
 	}
+	setupDB(t)
 	for _, tc := range tt {
-		path := fmt.Sprintf("/content/%s", tc.variable)
+		path := fmt.Sprintf("/content?lang=%s&id=%s", tc.lang, tc.id)
 		req, err := http.NewRequest("GET", path, nil)
 		if err != nil {
 			t.Error(err)
@@ -52,12 +71,12 @@ func TestGetByIdHandler(t *testing.T) {
 
 		rr := httptest.NewRecorder()
 		// Need to create a router that we can pass the request through so that the vars will be added to the context
-		router := Router()
+		router := Router(client)
 		router.ServeHTTP(rr, req)
 
 		if rr.Code == http.StatusOK && !tc.shouldPass {
-			t.Errorf("handler should have failed on routeVariable %s: got %v want %v",
-				tc.variable, rr.Code, http.StatusOK)
+			t.Errorf("handler should have failed on lang %s and id %s: got %v want %v",
+				tc.lang, tc.id, rr.Code, http.StatusOK)
 		}
 
 	}
@@ -73,7 +92,7 @@ func TestDeleteByIdHandler(t *testing.T) {
 
 		rr := httptest.NewRecorder()
 		// Need to create a router that we can pass the request through so that the vars will be added to the context
-		router := Router()
+		router := Router(client)
 		router.ServeHTTP(rr, req)
 
 		if rr.Code != http.StatusOK {
@@ -87,40 +106,6 @@ func TestDeleteByIdHandler(t *testing.T) {
 
 }
 
-func TestGetAllHandler(t *testing.T) {
-	req, err := http.NewRequest("GET", "/content", nil)
-	if err != nil {
-		t.Fatal(err)
-	}
-	// We create a ResponseRecorder (which satisfies http.ResponseWriter) to record the response.
-	rr := httptest.NewRecorder()
-	handler := http.HandlerFunc(GetAllHandler)
-
-	// Our handlers satisfy http.Handler, so we can call their ServeHTTP method
-	// directly and pass in our Request and ResponseRecorder.
-	handler.ServeHTTP(rr, req)
-
-	// Check the status code is what we expect.
-	if status := rr.Code; status != http.StatusOK {
-		t.Errorf("handler returned wrong status code: got %v want %v",
-			status, http.StatusOK)
-	}
-
-	if typ := rr.Header().Get("Content-Type"); typ != "application/json" {
-		t.Errorf("Expected content-type application/json, found %s", typ)
-	}
-
-	var responseObject JSONResponse
-	err = json.Unmarshal(rr.Body.Bytes(), &responseObject)
-	if err != nil {
-		t.Fatal(err)
-	}
-	// Check the response body is what we expect.
-	if len(responseObject.Data) != 4 {
-		t.Errorf("handler returned unexpected length: got %d expected %d",
-			rr.Body, 4)
-	}
-}
 
 func TestAddInstanceHandler(t *testing.T) {
 	i := InstancePackage{
@@ -142,7 +127,7 @@ func TestAddInstanceHandler(t *testing.T) {
 
 	rr := httptest.NewRecorder()
 	// Need to create a router that we can pass the request through so that the vars will be added to the context
-	router := Router()
+	router := Router(client)
 	router.ServeHTTP(rr, req)
 
 	if rr.Code != http.StatusOK {
@@ -176,7 +161,7 @@ func TestPostByIdHandler(t *testing.T) {
 
 	rr := httptest.NewRecorder()
 	// Need to create a router that we can pass the request through so that the vars will be added to the context
-	router := Router()
+	router := Router(client)
 	router.ServeHTTP(rr, req)
 
 	if rr.Code != http.StatusOK {
