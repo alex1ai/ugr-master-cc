@@ -61,6 +61,8 @@ Running the go application on my laptop on localhost (i7, 8gb RAM, SSD, Fedora 2
 tests with ~8700 #Requests/second (approximate average over 5 runs)
 
 **Results of different operating systems in Azure**
+The script can be found [here](./test_dist.sh).
+
 
 | OS         | Version   | Requests/sec | Setup time (s) |
 |------------|-----------|--------------|------------|
@@ -69,3 +71,4 @@ tests with ~8700 #Requests/second (approximate average over 5 runs)
 | Ubuntu     | 16.04 LTS |    71.44     |    279     |
 
 As a result of the speed test and the other factors, named [here](https://github.com/alex1ai/ugr-master-cc/blob/gh-pages/provision.md), I chose **ubuntuLTS** as the operating system for automatic vm creation in the acopio.sh script.
+Unfortunately I could not use newer versions, like 18.04 because it always raised an error. As in the future I will use Docker images anyway, I did not look further into this.
