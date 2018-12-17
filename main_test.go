@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/mongodb/mongo-go-driver/bson"
-	"github.com/mongodb/mongo-go-driver/mongo"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -13,10 +12,10 @@ import (
 	"time"
 )
 
-var client *mongo.Client
+var db *DB
 
-func populateDB(c *mongo.Client, instances int) {
-	collection := c.Database(Database).Collection(Collection)
+func populateDB(db *DB, instances int) {
+	collection := db.client.Database(Database).Collection(Collection)
 
 	ctx, _ := context.WithTimeout(context.Background(), 10*time.Second)
 	for i := 0; i < instances; i++ {
@@ -30,17 +29,20 @@ func populateDB(c *mongo.Client, instances int) {
 
 func setupDB(t *testing.T) {
 	var err error
-	if client == nil {
+	if db == nil {
 		Database = "testing"
-		client, err = initializeDatabase(MongoIp, MongoPort)
+		data := DB{}
+
+		err = data.connect(MongoIp, MongoPort)
 		if err != nil {
 			t.Error(err)
 		}
-		dropDB(client)
-		populateDB(client, 10)
+		data.drop()
+		populateDB(&data, 10)
 		if err != nil {
 			t.Fatal(err)
 		}
+		db = &data
 	}
 }
 
@@ -97,7 +99,7 @@ func TestGetHandler(t *testing.T) {
 		req.URL.RawQuery = q.Encode()
 		rr := httptest.NewRecorder()
 		// Need to create a router that we can pass the request through so that the vars will be added to the context
-		router := Router(client)
+		router := Router(db)
 		router.ServeHTTP(rr, req)
 
 		if rr.Code == http.StatusOK && !tc.shouldPass {
@@ -113,7 +115,8 @@ func TestDeleteHandler(t *testing.T) {
 
 	content := createDummyContent()
 	// First add something that we will delete next
-	conn := client.Database(Database).Collection(Collection)
+
+	conn := db.client.Database(Database).Collection(Collection)
 	ctx, _ := context.WithTimeout(context.Background(), 2*time.Second)
 
 	res, err := conn.InsertOne(ctx, content)
@@ -137,7 +140,7 @@ func TestDeleteHandler(t *testing.T) {
 
 		rr := httptest.NewRecorder()
 		// Need to create a router that we can pass the request through so that the vars will be added to the context
-		router := Router(client)
+		router := Router(db)
 		router.ServeHTTP(rr, req)
 
 		if rr.Code != http.StatusNoContent {
@@ -163,7 +166,7 @@ func TestPostHandler(t *testing.T) {
 	}
 
 	rr := httptest.NewRecorder()
-	router := Router(client)
+	router := Router(db)
 	router.ServeHTTP(rr, req)
 
 	code := rr.Code

@@ -1,9 +1,7 @@
 package main
 
 import (
-	"context"
 	"fmt"
-	"github.com/mongodb/mongo-go-driver/mongo"
 	log "github.com/sirupsen/logrus"
 	"net/http"
 	"os"
@@ -34,7 +32,6 @@ func validateLang(lang string) (matches bool, empty bool) {
 	return ok, lang == ""
 }
 
-
 func initLogger(fileName string) *os.File {
 	t := time.Now().String()
 	if !DEBUG {
@@ -58,8 +55,3 @@ func getEnv(key string, def string) string {
 	return value
 }
 
-func dropDB(client *mongo.Client) {
-	ctx, _ := context.WithTimeout(context.Background(), 10*time.Second)
-	client.Database(Database).Drop(ctx)
-	log.Debug("Dropped database")
-}
