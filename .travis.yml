@@ -3,15 +3,15 @@ go:
 - "1.10"
 before_deploy: wget https://github.com/zeit/now-cli/releases/download/11.5.2/now-linux.gz && gunzip -c now-linux.gz > ~/now && rm now-linux.gz && chmod +x ~/now
 services: mongodb
-deploy:
-- provider: script # Run a custom deployment script which we will define below
-  script: ~/now --public --token $NOW_TOKEN
-  skip_cleanup: true
-  on:
-    all_branches: true
-    master: false
-- provider: script
-  script: ~/now --public --token $NOW_TOKEN && ~/now alias --token $NOW_TOKEN
-  skip_cleanup: true
-  on:
-    master: true
+#deploy:
+#- provider: script # Run a custom deployment script which we will define below
+#  script: ~/now --public --token $NOW_TOKEN
+#  skip_cleanup: true
+#  on:
+#    all_branches: true
+#    master: false
+#- provider: script
+#  script: ~/now --public --token $NOW_TOKEN && ~/now alias --token $NOW_TOKEN
+#  skip_cleanup: true
+#  on:
+#    master: true
