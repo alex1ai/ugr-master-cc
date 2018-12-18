@@ -51,3 +51,6 @@ MV: 40.89.159.84
 ### Automatic provision
 
 As of milestone 4, we can create VMs in Azure automatically via `acopio.sh`. [This](https://github.com/alex1ai/ugr-master-cc/blob/gh-pages/cli-provisioning.md) provides all the documentation and justification for the chosen image, ressources and location. Currently the server is running on Ubuntu 16.04 LTS in France-Central on a cheap Azure virtual machine (B1s).
+
+MV2: 40.89.159.84
+
