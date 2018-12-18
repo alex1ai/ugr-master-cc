@@ -13,8 +13,9 @@ import (
 const (
 	MongoPort = 27017
 	MongoIp   = "localhost"
-	DEBUG     = false
-	LangRegex = "^[a-z]{2}$"
+	DEBUG     = true
+
+	LangRegex = "^\\w{2}$"
 	IdRegex   = "^[1-9][0-9]*"
 )
 
@@ -27,6 +28,7 @@ func sendResponse(writer http.ResponseWriter, status int, data []byte) {
 	writer.Header().Set("Content-Type", "application/json")
 	writer.WriteHeader(status)
 	writer.Write(data)
+
 }
 
 // ROUTES FOR WEBSERVICE
