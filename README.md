@@ -2,7 +2,20 @@
 
 # infogration-rest
 
-The usage of the most recent version is documented [here](https://github.com/alex1ai/ugr-master-cc/blob/gh-pages/usage.md).
+The usage and routes of the most recent version is documented [here](https://github.com/alex1ai/ugr-master-cc/blob/gh-pages/usage.md).
+
+## Local Installation and execution
+
+I assume you already have a valid go working directory structure. 
+Further do you need a running MongoDB-server somewhere - by default it will look at localhost:27017.
+Then you can run the following:
+```bash
+go get https://github.com/alex1ai/ugr-master-cc
+cd $GOPATH/src/github.com/alex1ai/ugr-master-cc
+go build & ./ugr-master-cc
+```
+which will start the service locally on 0.0.0.0:3000 by default. Set environment variables $IP and/or $PORT to change.
+
 ## Description
 
 This project is a RESTful WebService, which will be used for _infogration_, an Android app, which I developed in a previous class in Germany.
@@ -33,6 +46,8 @@ For easy provisioning on any virtual machine of this webservice, I chose Ansible
 This Project is deployed in Microsoft's Azure cloud with a low-resourced VM. 
 How to provision to your cloud and more information about the chosen configuration can be found [here](https://github.com/alex1ai/ugr-master-cc/blob/gh-pages/provision.md). 
 
-MV: 20.188.34.125
+MV: 40.89.159.84
+
+### Automatic provision
 
 As of milestone 4, we can create VMs in Azure automatically via `acopio.sh`. [This](https://github.com/alex1ai/ugr-master-cc/blob/gh-pages/cli-provisioning.md) provides all the documentation and justification for the chosen image, ressources and location. Currently the server is running on Ubuntu 16.04 LTS in France-Central on a cheap Azure virtual machine (B1s).
