@@ -19,7 +19,7 @@ func populateDB(db *DB, instances int) {
 
 	ctx, _ := context.WithTimeout(context.Background(), 10*time.Second)
 	for i := 0; i < instances; i++ {
-		content := createDummyContent()
+		content := createDummyContent(i)
 		_, err := collection.InsertOne(ctx, content)
 		if err != nil {
 			panic(err)
@@ -113,7 +113,7 @@ func TestGetHandler(t *testing.T) {
 func TestDeleteHandler(t *testing.T) {
 	setupDB(t)
 
-	content := createDummyContent()
+	content := createDummyContent(1)
 	// First add something that we will delete next
 
 	conn := db.client.Database(Database).Collection(Collection)
@@ -153,7 +153,7 @@ func TestDeleteHandler(t *testing.T) {
 func TestPostHandler(t *testing.T) {
 	setupDB(t)
 
-	content := createDummyContent()
+	content := createDummyContent(123)
 	js, err := json.Marshal(content)
 	if err != nil {
 		t.Error(err)
