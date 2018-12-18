@@ -70,6 +70,7 @@ func GetHandler(db *DB) func(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+// TODO: If this is a put request, automatically fill Id-Number according to maximum in database
 func PostPutHandler(db *DB) func(w http.ResponseWriter, r *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
 		decoder := json.NewDecoder(r.Body)
@@ -115,6 +116,18 @@ func DeleteHandler(db *DB) func(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+func initHandler(db *DB) func(w http.ResponseWriter, r *http.Request) {
+	return func(w http.ResponseWriter, r *http.Request) {
+		db.populate(10)
+	}
+}
+
+func resetHandler(db *DB) func(w http.ResponseWriter, r *http.Request) {
+	return func(w http.ResponseWriter, r *http.Request) {
+		db.reset()
+	}
+}
+
 func ErrorHandler(w http.ResponseWriter, r *http.Request) {
 	http.Error(w, "This is not the page you are looking for", http.StatusNotFound)
 	log.Warnf("Page not found: %s", r.URL.Path)
@@ -130,6 +143,9 @@ func Router(db *DB) *mux.Router {
 	r.HandleFunc("/content", PostPutHandler(db)).Methods("PUT")
 
 	r.HandleFunc("/content/{lang}/{id}", DeleteHandler(db)).Methods("DELETE")
+
+	r.HandleFunc("/init", initHandler(db))
+	r.HandleFunc("/reset", resetHandler(db))
 
 	r.HandleFunc("/", RootHandler)
 	r.HandleFunc("/{.*}", ErrorHandler)

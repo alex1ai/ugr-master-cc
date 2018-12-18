@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	log "github.com/sirupsen/logrus"
+	"math/rand"
 	"net/http"
 	"os"
 	"regexp"
@@ -55,3 +56,9 @@ func getEnv(key string, def string) string {
 	return value
 }
 
+func createDummyContent(id int) Content {
+	langs := []string{"de", "en", "es", "ar"}
+	lang := langs[rand.Intn(len(langs))]
+	created := time.Now()
+	return Content{"test 1", "test1 answer", uint(id), lang, "work", created}
+}

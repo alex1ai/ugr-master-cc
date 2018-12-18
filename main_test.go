@@ -37,7 +37,7 @@ func setupDB(t *testing.T) {
 		if err != nil {
 			t.Error(err)
 		}
-		data.drop()
+		data.reset()
 		populateDB(&data, 10)
 		if err != nil {
 			t.Fatal(err)

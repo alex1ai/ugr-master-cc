@@ -29,6 +29,22 @@ func (db *DB) connect(ip string, port int) (err error) {
 	return
 }
 
+func (db DB) populate(n int) error {
+
+	collection := db.client.Database(Database).Collection(Collection)
+
+	content := make([]interface{}, n)
+	for i := 0; i < n; i++ {
+		content[i] = createDummyContent(i + 1)
+		time.Sleep(1*time.Second)
+	}
+
+	ctx, _ := context.WithTimeout(context.Background(), 1*time.Second)
+	_, err := collection.InsertMany(ctx, content)
+
+	return err
+}
+
 func (db DB) query(query map[string]interface{}) ([] Content, error) {
 
 	collection := db.client.Database(Database).Collection(Collection)
@@ -81,8 +97,8 @@ func (db DB) close() error {
 	return db.client.Disconnect(ctx)
 }
 
-func (db DB) drop() {
+func (db DB) reset() {
 	ctx, _ := context.WithTimeout(context.Background(), 10*time.Second)
-	db.client.Database(Database).Drop(ctx)
-	log.Debug("Dropped database")
+	db.client.Database(Database).Collection(Collection).DeleteMany(ctx, nil)
+	log.Debug("Deleted everything in database")
 }
