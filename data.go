@@ -2,149 +2,87 @@ package main
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"github.com/mongodb/mongo-go-driver/mongo"
+	"github.com/mongodb/mongo-go-driver/mongo/options"
+	"github.com/mongodb/mongo-go-driver/mongo/readpref"
+	log "github.com/sirupsen/logrus"
 	"time"
 )
 
-const(
-	MONGOIP   ="mongoIp"
-	MONGOPORT ="mongoPort"
-)
-
-type DBQuery struct{
-	Lang string
-	Id uint
+type DB struct {
+	client *mongo.Client
 }
 
-type DB interface {
-	GetSize() int
-	setup(map[string]string) (interface{}, error)
-	add(...Instance) error
-	update(Instance) error
-	remove(Instance) error
-	get(...DBQuery) (InstancePackage, error)
-}
-
-type Mongo struct{}
-
-func (db Mongo) setup(pars map[string]string) (client interface{}, err error) {
-	port := pars[MONGOPORT]
-	ip:= pars[MONGOIP]
+func (db *DB) connect(ip string, port int) (err error) {
+	log.Infof("Connecting to Mongo Database, make sure it is running on %s:%d", ip, port)
 	ctx, _ := context.WithTimeout(context.Background(), 10*time.Second)
-	client, err = mongo.Connect(ctx, fmt.Sprintf("mongodb://%s:%s", ip, port))
+	db.client, err = mongo.Connect(ctx, fmt.Sprintf("mongodb://%s:%d", ip, port))
+
+	if err != nil {
+		return err
+	}
+
+	// Test reaching the DB
+	ctx, _ = context.WithTimeout(context.Background(), 2*time.Second)
+	err = db.client.Ping(ctx, readpref.Primary())
 	return
 }
 
-type DummyData struct {
-	instances InstancePackage
-}
+func (db DB) query(query map[string]interface{}) ([] Content, error) {
 
-func (dd *DummyData) GetLength() int {
-	return len(dd.instances)
-}
+	collection := db.client.Database(Database).Collection(Collection)
 
-func (dd *DummyData) create() error {
-	dd.instances = InstancePackage{
-		{
-			Content{1, "How is life these days?", "So good"},
-			Languages.EN,
-			JSONTime{time.Now()},
-		},
-		{
-			Content{2, "Are 2 questions sufficient?", "I do not think so!"},
-			Languages.EN,
-			JSONTime{time.Now()},
-		},
-		{
-			Content{3, "Are 3 questions sufficient?", "I think so!"},
-			Languages.EN,
-			JSONTime{time.Now()},
-		},
-		{
-			Content{2, "2 preguntas son suficiente?", "Creo que no!"},
-			Languages.ES,
-			JSONTime{time.Now()},
-		},
+	ctx, _ := context.WithTimeout(context.Background(), 10*time.Second)
+	cur, err := collection.Find(ctx, query)
+
+	if err != nil {
+		return nil, err
 	}
-	return nil
-}
 
-func findInData(dd DummyData, fn func(instance Instance) bool) (InstancePackage, error) {
-	var ret InstancePackage
-	for _, i := range dd.instances {
-		if fn(i) {
-			ret = append(ret, i)
+	response := make([]Content, 1)
+	for cur.Next(ctx) {
+		var result Content
+		err = cur.Decode(&result)
+		if err != nil {
+			return nil, err
 		}
+		response = append(response, result)
 	}
-	if len(ret) == 0 {
-		return InstancePackage{}, errors.New("could not find instance")
-	}
-	return ret, nil
+
+	return response, nil
+
 }
 
-func (dd *DummyData) getByLanguage(langCode string) (resp InstancePackage, error error) {
-	if langCode == "all" {
-		return dd.instances, nil
-	}
-	return findInData(*dd, func(instance Instance) bool {
-		return instance.Language == langCode
-	})
+func (db DB) update(filter interface{}, replacement interface{}) (bool, error) {
+	ctx, _ := context.WithTimeout(context.Background(), 10*time.Second)
+	coll := db.client.Database(Database).Collection(Collection)
+
+	opts := options.ReplaceOptions{}
+	// If lang and id not there yet, this represents the same as a PUT request, i.e. creating a new Document
+	opts.SetUpsert(true)
+	ex, err := coll.ReplaceOne(ctx, filter, replacement, &opts)
+
+	return ex != nil, err
 }
 
-func (dd *DummyData) getById(id uint, lang string) (resp Instance, found bool) {
-	data, err := findInData(*dd, func(instance Instance) bool {
-		return instance.Language == lang && instance.Content.Id == id
-	})
-	if len(data) != 1 || err != nil {
-		return Instance{}, false
-	}
-	return data[0], true
+func (db DB) delete(instanceQuery interface{}) (*mongo.DeleteResult, error) {
+	ctx, _ := context.WithTimeout(context.Background(), 10*time.Second)
+	coll := db.client.Database(Database).Collection(Collection)
+
+	del, err := coll.DeleteOne(ctx, instanceQuery)
+	log.Debug(del.DeletedCount)
+
+	return del, err
 }
 
-func (dd *DummyData) close() error {
-	dd.instances = nil
-	return nil
+func (db DB) close() error {
+	ctx, _ := context.WithTimeout(context.Background(), 5*time.Second)
+	return db.client.Disconnect(ctx)
 }
 
-func (dd *DummyData) addInstance(other Instance) error {
-	data, _ := findInData(*dd, func(instance Instance) bool {
-		return instance == other
-	})
-	if len(data) > 0 {
-		return dd.updateById(other.Content.Id, other.Language, other)
-	}
-
-	dd.instances = append(dd.instances, other)
-	return nil
-}
-
-func (dd *DummyData) removeById(id uint, lang string) error {
-	numBefore := dd.GetLength()
-	data, err := findInData(*dd, func(instance Instance) bool {
-		return instance.Language != lang && instance.Content.Id != id
-	})
-	if numBefore == len(data) || err != nil {
-		return errors.New("nothing was deleted")
-	}
-
-	dd.instances = data
-	return nil
-}
-
-func (dd *DummyData) updateById(id uint, lang string, updateInstance Instance) error {
-	var element = -1
-	for e, i := range dd.instances {
-		if i.Content.Id == id && i.Language == lang {
-			element = e
-		}
-	}
-	if element == -1 {
-		return errors.New(fmt.Sprintf("could not find elemend %d", id))
-	}
-
-	dd.instances[element] = updateInstance
-
-	return nil
+func (db DB) drop() {
+	ctx, _ := context.WithTimeout(context.Background(), 10*time.Second)
+	db.client.Database(Database).Drop(ctx)
+	log.Debug("Dropped database")
 }

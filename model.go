@@ -1,9 +1,7 @@
 package main
 
 import (
-	"encoding/json"
-	"fmt"
-	"strconv"
+	"math/rand"
 	"time"
 )
 
@@ -14,6 +12,27 @@ type LangRegistry struct {
 	ES  string
 	AR  string
 	ALL string
+}
+
+type Content struct {
+	Question  string    `bson:"q, omitempty" json:"question"`
+	Answer    string    `bson:"a, omitempty" json:"answer"`
+	Id        uint      `bson:"id, omitempty" json:"id"`
+	Language  string    `bson:"lang, omitempty" json:"lang"`
+	Category  string    `bson:"cat, omitempty" json:"category"`
+	CreatedAt time.Time `bson:"time, omitempty" json:"created_at"`
+}
+
+func createDummyContent() Content {
+	id := rand.Intn(20)
+	langs := []string{"de", "en", "es", "ar"}
+	lang := langs[rand.Intn(len(langs))]
+	created := time.Now()
+	return Content{"test 1", "test1 answer", uint(id), lang, "work", created}
+}
+
+func (c *Content) validate() bool {
+	return true
 }
 
 func newLangRegistry() *LangRegistry {
@@ -27,47 +46,3 @@ func newLangRegistry() *LangRegistry {
 }
 
 var Languages = newLangRegistry()
-
-// Type Modelling
-type Content struct {
-	Id       uint   `json:"id"`
-	Question string `json:"question"`
-	Answer   string `json:"answer"`
-}
-
-type Instance struct {
-	Content   Content  `json:"content"`
-	Language  string   `json:"language"`
-	CreatedAt JSONTime `json:"createdAt"`
-}
-
-type JSONTime struct {
-	time.Time
-}
-
-type JSONResponse struct {
-	Status string          `json:"status"`
-	Data   InstancePackage `json:"data"`
-}
-
-// Alias for Array
-type InstancePackage []Instance
-
-func (t JSONTime) MarshalJSON() ([]byte, error) {
-	//do your serializing here
-	stamp := fmt.Sprintf("\"%d\"", t.Unix())
-	return []byte(stamp), nil
-}
-
-func (t *JSONTime) UnmarshalJSON(b []byte) error {
-	var s string
-	if err := json.Unmarshal(b, &s); err != nil {
-		return err
-	}
-	newTime, err := strconv.Atoi(s)
-	if err != nil {
-		return err
-	}
-	*t = JSONTime{time.Unix(int64(newTime), 0)}
-	return nil
-}

@@ -1,10 +1,10 @@
 package main
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/google/go-cmp/cmp"
-	"github.com/mongodb/mongo-go-driver/mongo"
+	"github.com/mongodb/mongo-go-driver/bson"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -12,7 +12,39 @@ import (
 	"time"
 )
 
-var client *mongo.Client
+var db *DB
+
+func populateDB(db *DB, instances int) {
+	collection := db.client.Database(Database).Collection(Collection)
+
+	ctx, _ := context.WithTimeout(context.Background(), 10*time.Second)
+	for i := 0; i < instances; i++ {
+		content := createDummyContent()
+		_, err := collection.InsertOne(ctx, content)
+		if err != nil {
+			panic(err)
+		}
+	}
+}
+
+func setupDB(t *testing.T) {
+	var err error
+	if db == nil {
+		Database = "testing"
+		data := DB{}
+
+		err = data.connect(MongoIp, MongoPort)
+		if err != nil {
+			t.Error(err)
+		}
+		data.drop()
+		populateDB(&data, 10)
+		if err != nil {
+			t.Fatal(err)
+		}
+		db = &data
+	}
+}
 
 func TestRootHandler(t *testing.T) {
 	// Create a request to pass to our handler. We don't have any query parameters for now, so we'll
@@ -37,41 +69,37 @@ func TestRootHandler(t *testing.T) {
 	}
 }
 
-func setupDB(t *testing.T) {
-	var err error
-	client, _ = initializeDatabase(MongoIp, MongoPort)
-	if err != nil {
-		t.Fatal(err)
-	}
-}
-
 func TestGetHandler(t *testing.T) {
 	tt := []struct {
-		lang   string
-		id string
+		lang       string
+		id         string
 		shouldPass bool
 	}{
-		{"de", "1",true},
-		{"en", "2",true},
+		{"de", "1", true},
+		{"en", "2", true},
 		{"es", "-1", false},
 		{"", "", true},
 		{"de", "", true},
 		{"", "1", true},
-		{"asdf", "1", true},
-
-
+		{"asdf", "1", false},
 	}
+
 	setupDB(t)
+
 	for _, tc := range tt {
-		path := fmt.Sprintf("/content?lang=%s&id=%s", tc.lang, tc.id)
-		req, err := http.NewRequest("GET", path, nil)
+		req, err := http.NewRequest("GET", "/content", nil)
 		if err != nil {
 			t.Error(err)
 		}
 
+		q := req.URL.Query()
+		q.Add("lang", tc.lang)
+		q.Add("id", tc.id)
+
+		req.URL.RawQuery = q.Encode()
 		rr := httptest.NewRecorder()
 		// Need to create a router that we can pass the request through so that the vars will be added to the context
-		router := Router(client)
+		router := Router(db)
 		router.ServeHTTP(rr, req)
 
 		if rr.Code == http.StatusOK && !tc.shouldPass {
@@ -82,9 +110,29 @@ func TestGetHandler(t *testing.T) {
 	}
 }
 
-func TestDeleteByIdHandler(t *testing.T) {
+func TestDeleteHandler(t *testing.T) {
+	setupDB(t)
+
+	content := createDummyContent()
+	// First add something that we will delete next
+
+	conn := db.client.Database(Database).Collection(Collection)
+	ctx, _ := context.WithTimeout(context.Background(), 2*time.Second)
+
+	res, err := conn.InsertOne(ctx, content)
+	if res.InsertedID == nil || err != nil {
+		t.Error("could not put content in DB")
+	}
+
+	var other Content
+	err = conn.FindOne(context.Background(), bson.M{"lang": content.Language, "id": content.Id}).Decode(&other)
+
+	if err != nil {
+		t.Error("Did not find instance")
+	}
+
 	for i := 0; i < 2; i++ {
-		path := fmt.Sprintf("/content/%s/%d", "en", 1)
+		path := fmt.Sprintf("/content/%s/%d", content.Language, content.Id)
 		req, err := http.NewRequest("DELETE", path, nil)
 		if err != nil {
 			t.Error(err)
@@ -92,90 +140,43 @@ func TestDeleteByIdHandler(t *testing.T) {
 
 		rr := httptest.NewRecorder()
 		// Need to create a router that we can pass the request through so that the vars will be added to the context
-		router := Router(client)
+		router := Router(db)
 		router.ServeHTTP(rr, req)
 
-		if rr.Code != http.StatusOK {
-			t.Errorf("handler should have return bad status on second time delete")
+		if rr.Code != http.StatusNoContent {
+			t.Errorf("handler should have returned NoContent")
+			print(rr.Code)
 		}
-		// TODO: Fix data management then, this will work. right now every requests creates a new DB
-		//if rr.Code == http.StatusNotFound && i == 0 {
-		//	t.Errorf("handler should have return OK on first time delete")
-		//}
 	}
-
 }
 
+func TestPostHandler(t *testing.T) {
+	setupDB(t)
 
-func TestAddInstanceHandler(t *testing.T) {
-	i := InstancePackage{
-		{Content{4, "2 Nueva Edicion!", "Creo que no!"},
-			Languages.ES,
-			JSONTime{time.Now()},
-		},
-		{Content{5, "2 Nueva Edicion!", "Creo que no!"},
-			Languages.ES,
-			JSONTime{time.Now()},
-		},
+	content := createDummyContent()
+	js, err := json.Marshal(content)
+	if err != nil {
+		t.Error(err)
 	}
-	js, _ := json.Marshal(i)
-
+	// First request
 	req, err := http.NewRequest("POST", "/content", strings.NewReader(string(js)))
 	if err != nil {
 		t.Error(err)
 	}
 
 	rr := httptest.NewRecorder()
-	// Need to create a router that we can pass the request through so that the vars will be added to the context
-	router := Router(client)
+	router := Router(db)
 	router.ServeHTTP(rr, req)
 
-	if rr.Code != http.StatusOK {
-		t.Errorf("handler did not pass on POST %s", "/content")
+	code := rr.Code
+	if !(code == http.StatusNoContent || code == http.StatusCreated) {
+		t.Error("handler did not pass on first POST")
 	}
 
-	var resp JSONResponse
-	dec := json.NewDecoder(rr.Body)
-
-	if err = dec.Decode(&resp); err != nil {
-		t.Error(err)
-	}
-	if cmp.Equal(i, resp.Data) {
-		t.Errorf("Found different instances even though we updated an existing one\nFound %s\n expected %s", rr.Body.String(), js)
-	}
-}
-
-func TestPostByIdHandler(t *testing.T) {
-	i := InstancePackage{
-		{Content{2, "2 Nueva Edicion!", "Creo que no!"},
-			Languages.ES,
-			JSONTime{time.Now()},
-		},
-	}
-	js, _ := json.Marshal(i)
-
-	req, err := http.NewRequest("POST", "/content", strings.NewReader(string(js)))
-	if err != nil {
-		t.Error(err)
-	}
-
-	rr := httptest.NewRecorder()
-	// Need to create a router that we can pass the request through so that the vars will be added to the context
-	router := Router(client)
+	// Now the instance is created => must return NoContent
 	router.ServeHTTP(rr, req)
-
-	if rr.Code != http.StatusOK {
-		t.Errorf("handler did not pass on POST %s", "/content")
-	}
-
-	var resp JSONResponse
-	dec := json.NewDecoder(rr.Body)
-
-	if err = dec.Decode(&resp); err != nil {
-		t.Error(err)
-	}
-	if cmp.Equal(i, resp.Data) {
-		t.Errorf("Found different instances even though we updated an existing one\nFound %s\n expected %s", rr.Body.String(), js)
+	if code = rr.Code; code != http.StatusNoContent {
+		t.Errorf("handler did not pass on second POST of same instance,  returned %d ", code)
 	}
 
 }

@@ -1,136 +1,45 @@
 package main
 
 import (
-	"context"
 	"encoding/json"
 	"fmt"
 	"github.com/gorilla/mux"
-	"github.com/mongodb/mongo-go-driver/mongo"
-	"github.com/mongodb/mongo-go-driver/mongo/readpref"
 	log "github.com/sirupsen/logrus"
 	"net/http"
 	"os"
-	"regexp"
 	"strconv"
-	"time"
 )
 
 const (
-	MongoPort  = 27017
-	MongoIp    = "localhost"
-	Database   = "info"
-	Collection = "content"
-	DEBUG      = true
+	MongoPort = 27017
+	MongoIp   = "localhost"
+	DEBUG     = true
 
-	LangRegex = "^\\w{2}"
+	LangRegex = "^\\w{2}$"
 	IdRegex   = "^[1-9][0-9]*"
 )
 
-func initLogger(fileName string) *os.File {
-	if !DEBUG {
-		file, err := os.OpenFile(fileName, os.O_RDWR|os.O_CREATE|os.O_APPEND, 0666)
-		if err != nil {
-			log.Fatalf("error opening file: %v", err)
-		}
-		log.SetOutput(file)
-		return file
-	}
-	log.SetLevel(log.DebugLevel)
-	f := os.File{}
-	return &f
-}
+var (
+	Database   = "info"
+	Collection = "content"
+)
 
-func initializeDatabase(ip string, port int) (client *mongo.Client, err error) {
-	log.Infof("Connecting to Mongo Database, make sure it is running on %s:%d", ip, port)
-	ctx, _ := context.WithTimeout(context.Background(), 10*time.Second)
-	client, err = mongo.Connect(ctx, fmt.Sprintf("mongodb://%s:%d", MongoIp, MongoPort))
-	ctx, _ = context.WithTimeout(context.Background(), 2*time.Second)
-	err = client.Ping(ctx, readpref.Primary())
-	return
-}
-
-func getDB() DummyData {
-	db := new(DummyData)
-	err := db.create()
-	if err != nil {
-		log.Fatal(err)
-	}
-	return *db
-}
-
-// Helper functions
-func jsonWrapper(status int, data InstancePackage) []byte {
-
-	j, err := json.Marshal(JSONResponse{http.StatusText(status), data})
-	if err != nil {
-		j = jsonWrapper(http.StatusBadRequest, InstancePackage{})
-	}
-	log.WithFields(log.Fields{
-		"status": status,
-		"data":   string(j),
-	}).Info("HTML Response")
-	return j
-}
-
-// Route-Handlers
-
-func sendResponse(writer http.ResponseWriter, status int, data InstancePackage) {
-	writer.Header().Set("ContentNew-Type", "application/json")
+func sendResponse(writer http.ResponseWriter, status int, data []byte) {
+	writer.Header().Set("Content-Type", "application/json")
 	writer.WriteHeader(status)
-	writer.Write(jsonWrapper(status, data))
-}
-
-func errorPanic(w http.ResponseWriter, err error) {
-	if err != nil {
-		log.Fatal(err)
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-	}
-}
-
-type ContentNew struct {
-	Question  string `bson:"q, omitempty"`
-	Answer    string `bson:"a, omitempty"`
-	Id        uint   `bson:"id, omitempty"`
-	Language  string `bson:"lang, omitempty"`
-	Category  string `bson:"cat, omitempty"`
-	CreatedAt uint   `bson:"time, omitempty"`
-}
-
-func validateId(id string) (matches bool, empty bool) {
-	ok, err := regexp.MatchString(IdRegex, id)
-	if err != nil {
-		log.Debug(err.Error())
-	}
-	return ok, id == ""
-}
-
-func validateLang(lang string) (matches bool, empty bool) {
-	ok, err := regexp.MatchString(LangRegex, lang)
-	if err != nil {
-		log.Debug(err.Error())
-	}
-	return ok, lang == ""
-}
-
-func populateDB(c *mongo.Client) {
-	collection := c.Database(Database).Collection(Collection)
-
-	ctx, _ := context.WithTimeout(context.Background(), 10*time.Second)
-	content := ContentNew{"q1", "a1", 2, "en", "work", 1234}
-
-	res, err := collection.InsertOne(ctx, content)
-	log.Debug(res, err)
+	writer.Write(data)
 
 }
 
-func GetHandler(c *mongo.Client) func(w http.ResponseWriter, r *http.Request) {
+// ROUTES FOR WEBSERVICE
+func RootHandler(w http.ResponseWriter, _ *http.Request) {
+	sendResponse(w, http.StatusOK, []byte("{\"status\": \"OK\"}"))
+}
+
+func GetHandler(db *DB) func(w http.ResponseWriter, r *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
 		lang := r.FormValue("lang")
 		id := r.FormValue("id")
-
-		collection := c.Database(Database).Collection(Collection)
-
-		ctx, _ := context.WithTimeout(context.Background(), 10*time.Second)
 
 		idOk, idEmpty := validateId(id)
 		langOk, langEmpty := validateLang(lang)
@@ -150,20 +59,8 @@ func GetHandler(c *mongo.Client) func(w http.ResponseWriter, r *http.Request) {
 			query["lang"] = lang
 		}
 
-		cur, err := collection.Find(ctx, query)
-		errorPanic(w, err)
+		response, err := db.query(query)
 
-		defer cur.Close(ctx)
-
-		response := make([]ContentNew, 1)
-		for cur.Next(ctx) {
-			var result ContentNew
-			err := cur.Decode(&result)
-			errorPanic(w, err)
-			log.Debug(result.Language)
-			response = append(response, result)
-		}
-		errorPanic(w, cur.Err())
 		j, err := json.Marshal(response)
 		errorPanic(w, err)
 
@@ -173,63 +70,49 @@ func GetHandler(c *mongo.Client) func(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func RootHandler(w http.ResponseWriter, _ *http.Request) {
-	sendResponse(w, http.StatusOK, nil)
-}
+func PostPutHandler(db *DB) func(w http.ResponseWriter, r *http.Request) {
+	return func(w http.ResponseWriter, r *http.Request) {
+		decoder := json.NewDecoder(r.Body)
 
-
-func PostByIdHandler(w http.ResponseWriter, r *http.Request) {
-	db := getDB()
-	decoder := json.NewDecoder(r.Body)
-	status := http.StatusOK
-	var ip InstancePackage
-	if err := decoder.Decode(&ip); err != nil {
-		status, ip = http.StatusBadRequest, InstancePackage{}
-	} else {
-		for _, j := range ip {
-			id, lang := j.Content.Id, j.Language
-			_, exists := db.getById(id, lang)
-			// This (lang,id) is not yet known -> Put
-			if !exists {
-				db.addInstance(j)
-			} else { // It is already known -> Update
-				db.updateById(id, lang, j)
-			}
+		var instance Content
+		if err := decoder.Decode(&instance); err != nil || !instance.validate() {
+			http.Error(w, err.Error(), http.StatusBadRequest)
 		}
-	}
-	sendResponse(w, status, ip)
-}
 
-func DeleteByIdHandler(w http.ResponseWriter, r *http.Request) {
-	id, _ := mux.Vars(r)["id"]
-	lang, _ := mux.Vars(r)["lang"]
-	db := getDB()
-	idNumber, err := strconv.Atoi(id)
-	if err != nil || idNumber < 0 {
-		sendResponse(w, http.StatusBadRequest, nil)
-	}
-	err = db.removeById(uint(idNumber), lang)
-	if err != nil {
-		sendResponse(w, http.StatusNotFound, nil)
-	}
-	sendResponse(w, http.StatusOK, nil)
-}
+		id, lang := instance.Id, instance.Language
 
-func AddInstanceHandler(w http.ResponseWriter, r *http.Request) {
-	db := getDB()
-	decoder := json.NewDecoder(r.Body)
-	status := http.StatusOK
-	var ip InstancePackage
-	if err := decoder.Decode(&ip); err != nil {
-		status, ip = http.StatusBadRequest, InstancePackage{}
-	} else {
-		for _, j := range ip {
-			if _, exists := db.getById(j.Content.Id, j.Language); !exists {
-				db.addInstance(j)
-			}
+		query := map[string]interface{}{
+			"lang": lang,
+			"id":   id,
 		}
+
+		_, err := db.update(query, instance)
+		errorPanic(w, err)
+
+		sendResponse(w, http.StatusNoContent, nil)
+
 	}
-	sendResponse(w, status, ip)
+}
+
+func DeleteHandler(db *DB) func(w http.ResponseWriter, r *http.Request) {
+	return func(w http.ResponseWriter, r *http.Request) {
+		id, _ := mux.Vars(r)["id"]
+		lang, _ := mux.Vars(r)["lang"]
+		idNumber, err := strconv.Atoi(id)
+		if err != nil || idNumber < 0 {
+			sendResponse(w, http.StatusBadRequest, nil)
+		}
+
+		query := map[string]interface{}{
+			"lang": lang,
+			"id":   uint(idNumber),
+		}
+		_, err = db.delete(query)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+		}
+		sendResponse(w, http.StatusNoContent, nil)
+	}
 }
 
 func ErrorHandler(w http.ResponseWriter, r *http.Request) {
@@ -237,15 +120,17 @@ func ErrorHandler(w http.ResponseWriter, r *http.Request) {
 	log.Warnf("Page not found: %s", r.URL.Path)
 }
 
-func Router(client *mongo.Client) *mux.Router {
+func Router(db *DB) *mux.Router {
 	r := mux.NewRouter()
-	r.HandleFunc("/content", GetHandler(client)).
-		Methods("GET").
+	r.HandleFunc("/content", GetHandler(db)).Methods("GET").
 		Queries("lang", "{lang}", "id", "{id:[0-9]*}")
-	r.HandleFunc("/content", GetHandler(client)).Methods("GET")
-	r.HandleFunc("/content/{lang}/{id}", DeleteByIdHandler).Methods("DELETE")
-	r.HandleFunc("/content", PostByIdHandler).Methods("POST")
-	r.HandleFunc("/content", AddInstanceHandler).Methods("PUT")
+	r.HandleFunc("/content", GetHandler(db)).Methods("GET")
+
+	r.HandleFunc("/content", PostPutHandler(db)).Methods("POST")
+	r.HandleFunc("/content", PostPutHandler(db)).Methods("PUT")
+
+	r.HandleFunc("/content/{lang}/{id}", DeleteHandler(db)).Methods("DELETE")
+
 	r.HandleFunc("/", RootHandler)
 	r.HandleFunc("/{.*}", ErrorHandler)
 
@@ -257,17 +142,8 @@ func loggingMiddleware(next http.Handler) http.Handler {
 		// Do stuff here
 		log.Info(r.RequestURI)
 
-		// Call the next handler, which can be another middleware in the chain, or the final handler.
 		next.ServeHTTP(w, r)
 	})
-}
-
-func getEnv(key string, def string) string {
-	value := os.Getenv(key)
-	if value == "" {
-		value = def
-	}
-	return value
 }
 
 func main() {
@@ -275,20 +151,22 @@ func main() {
 	port := getEnv("PORT", "3000")
 	ip := getEnv("IP", "0.0.0.0")
 	home := os.Getenv("HOME")
-	logPath := getEnv("LOG_FILE", home+"/logfile.log")
+	logPath := getEnv("LOG_FILE", home+"/logfile")
 	logFile := initLogger(logPath)
 	defer logFile.Close()
 
 	// Initialize Datebase
-	client, err := initializeDatabase(MongoIp, MongoPort)
+	db := DB{}
+	err := db.connect(MongoIp, MongoPort)
+
 	if err != nil {
 		log.Fatal(err)
 		panic(err)
 	}
 
-	//populateDB(client)
-	// Get 	Router
-	r := Router(client)
+	defer db.close()
+
+	r := Router(&db)
 
 	// Add middleware
 	r.Use(loggingMiddleware)
