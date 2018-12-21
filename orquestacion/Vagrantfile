@@ -1,0 +1,10 @@
+VAGRANTFILE_API_VERSION = "2"
+
+Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
+	config.vm.box_url = "https://atlas.hashicorp.com/envimation/boxes/ubuntu-xenial"
+	config.vm.box = "envimation/ubuntu-xenial"
+    config.vm.provision "ansible" do |ansible|
+        ansible.playbook = "../provision/playbook.yml"
+    end
+
+end
