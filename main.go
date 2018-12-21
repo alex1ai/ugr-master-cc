@@ -11,7 +11,7 @@ import (
 )
 
 const (
-	MongoPort = 27017
+	MongoPort = "27017"
 	MongoIp   = "localhost"
 	DEBUG     = true
 
@@ -173,7 +173,10 @@ func main() {
 
 	// Initialize Datebase
 	db := DB{}
-	err := db.connect(MongoIp, MongoPort)
+	mPort := getEnv("MONGO_PORT", MongoPort)
+	mPortI, err := strconv.Atoi(mPort)
+	mIp := getEnv("MONGO_IP", MongoIp)
+	err = db.connect(mIp, mPortI)
 
 	if err != nil {
 		log.Fatal(err)
