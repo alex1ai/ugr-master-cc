@@ -81,7 +81,14 @@ Furthermore I have modified playbooks in use here (to seperate DB and server con
 
 Here we need to enable MongoDB to be accessed by other other machines instead only localhost. THIS IS ESSENTIAL. Providing "0.0.0.0" enables connections from any computer basically which suggests a big security issue. For this milestone and testing issues it is okay, but **never use this in production**.
 
-After `vagrant up` and some time to initialize the machines, we can access the webserver also via localhost (see portforwarding in the Vagrantfile above) by:
+The only thing you have to do to execute everything is (if you are on root level of the project)
+
+```bash
+cd orquestacion
+vagrant up
+``` 
+
+and after some time to initialize the machines, we can access the webserver also via localhost (see portforwarding in the Vagrantfile above) by:
 
 ```
 curl localhost:3000
