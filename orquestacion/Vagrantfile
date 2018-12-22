@@ -1,28 +1,71 @@
 # -*- mode: ruby -*-
 # vi: set ft=ruby :
 
-BOX = "ubuntu/xenial64"
-BASE_IP = "192.168.50.1"
-IP_DATA = "192.168.50.2"
-IP_SERVER = "192.168.50.3"
+require 'vagrant-azure'
+
+tenant_id = ENV['AZURE_TENANT_ID']
+client_id = ENV['AZURE_CLIENT_ID']
+client_secret = ENV['AZURE_CLIENT_SECRET']
+subscription_id = ENV['AZURE_SUBSCRIPTION_ID']
+
+vm_size="Standard_B1s"
+location="francecentral"
+resource_group="vagrant"
+subnet = "info"
 
 Vagrant.configure("2") do |config|
+    config.vm.define 'azure-server' do |server|
+        server.vm.box = 'azure'
+        server.vm.provider :azure do |az, override|
+            # each of the below values will default to use the env vars named as below if not specified explicitly
+            az.tenant_id = tenant_id
+            az.client_id = client_id
+            az.client_secret = client_secret
+            az.subscription_id = subscription_id
 
-  config.vm.define 'data' do |data|
-    data.vm.box = BOX
-    data.vm.provision "ansible" do |ansible|
-		ansible.playbook = "./provision/data_playbook.yml"
-	end
-	data.vm.network "private_network", ip: IP_DATA
-  end
+			az.vm_name = "vagrant-server"
+            # Default VM configuration
+            az.vm_size = vm_size
+            # Could set image here, but prefer Ubuntu 16.04 (default)
+            # az.vm_image_urn = "canonical:ubuntuserver:16.04-LTS:latest"
+            az.tcp_endpoints = 80
+            az.location = location
+            az.resource_group_name = resource_group
+            az.dns_name = "infogration-server"
+            az.subnet_name = subnet
+        end
 
-  config.vm.define 'server' do |local|	
-	local.vm.box = BOX
-    local.vm.provision "ansible" do |ansible|
-        ansible.playbook = "./provision/playbook.yml"
+        server.vm.provision "ansible" do |ansible|
+            ansible.playbook = "./provision/data_playbook.yml"
+        end
     end
-	local.vm.network "private_network", ip: IP_SERVER 
-    local.vm.network "forwarded_port", guest:3000, host:4321  
-  end
 
+    config.vm.define 'azure-data' do |data|
+        data.vm.box = 'azure'
+        data.vm.provider :azure do |az, override|
+            # each of the below values will default to use the env vars named as below if not specified explicitly
+            az.tenant_id = tenant_id
+            az.client_id = client_id
+            az.client_secret = client_secret
+            az.subscription_id = subscription_id
+
+			az.vm_name = "vagrant-db"
+            # Default VM configuration
+            az.vm_size = vm_size
+
+            # Could set image here, but prefer Ubuntu 16.04 (default)
+            # az.vm_image_urn = "canonical:ubuntuserver:16.04-LTS:latest"
+
+            az.tcp_endpoints = 27017
+            az.location = location
+            az.resource_group_name = resource_group
+            az.dns_name = "infogration-db"
+            az.subnet_name = subnet
+
+        end
+        data.vm.provision "ansible" do |ansible|
+            ansible.playbook = "./provision/playbook.yml"
+        end
+    end
+  config.ssh.private_key_path = '~/.ssh/id_rsa'
 end
