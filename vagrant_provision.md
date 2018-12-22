@@ -98,3 +98,21 @@ curl localhost:3000
 Everything working locally! Let's go further and deploy both in Azure...
 
 ## Provision on Azure-Cloud
+
+At first, make sure you are logged in locally in your azure subscription. You can do that through `$ az login`.
+
+Next, you will need to set some environment variables. Either follow these steps at ["Create an Azure Active Directory (AAD) Application"](https://github.com/Azure/vagrant-azure) or if you have the package _jq_ installed you can also just type `$ source set_env.sh` from the orchestration folder - this will set all needed environment variables automatically.
+
+If you haven't already, install the Azure-Vagrant plugin now
+
+`$ vagrant plugin install vagrant-azure`
+
+Finally you need to install the azure-dummy box via
+
+`$ vagrant box add azure https://github.com/azure/vagrant-azure/raw/v2.0/dummy.box --provider azure`
+
+Last but not least, type `$ vagrant up --provider azure` to start and provision the servers in your Azure subscription.
+
+### Choices made in Vagrantfile
+
+...
