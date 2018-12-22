@@ -16,7 +16,7 @@ type DB struct {
 
 func (db *DB) connect(ip string, port int) (err error) {
 	log.Infof("Connecting to Mongo Database, make sure it is running on %s:%d", ip, port)
-	ctx, _ := context.WithTimeout(context.Background(), 10*time.Second)
+	ctx, _ := context.WithTimeout(context.Background(), 5*time.Second)
 	db.client, err = mongo.Connect(ctx, fmt.Sprintf("mongodb://%s:%d", ip, port))
 
 	if err != nil {

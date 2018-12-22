@@ -7,6 +7,7 @@ import (
 	"github.com/mongodb/mongo-go-driver/bson"
 	"net/http"
 	"net/http/httptest"
+	"strconv"
 	"strings"
 	"testing"
 	"time"
@@ -28,12 +29,11 @@ func populateDB(db *DB, instances int) {
 }
 
 func setupDB(t *testing.T) {
-	var err error
 	if db == nil {
 		Database = "testing"
 		data := DB{}
-
-		err = data.connect(MongoIp, MongoPort)
+		portI, err := strconv.Atoi(MongoPort)
+		err = data.connect(MongoIp, portI)
 		if err != nil {
 			t.Error(err)
 		}
