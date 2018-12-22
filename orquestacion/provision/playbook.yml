@@ -18,12 +18,11 @@
     project_dir: "{{ go_home_dir }}/src/github.com/alex1ai/ugr-master-cc"
     port_nr: 3000
     packages: ["git", "daemon"]
-    start_data: false
   environment:
     PORT: "{{ port_nr }}"
     IP: "0.0.0.0"
     GOPATH: "{{ lookup('env','HOME') }}/go"
-    MONGO_IP: "192.168.50.5"
+    MONGO_IP: "192.168.50.2"
   tasks:
   - name: install system updates for centos systems
     become: yes
@@ -95,11 +94,6 @@
   
   - name: Kill old server if running
     shell: "if pgrep ugr-master-cc; then pkill ugr-master-cc; fi"
-
-
-  - name: Install and start mongodb
-    include: mongo.yml
-    
 
   - name: Run webservice in different process
     shell: "daemon -- {{ go_home_dir }}/bin/ugr-master-cc || nohup {{ go_home_dir }}/bin/ugr-master-cc > /dev/null 2>&1 &" 

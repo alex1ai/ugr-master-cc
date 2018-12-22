@@ -1,0 +1,32 @@
+---
+- name: dependency provisioning
+  hosts: all
+  gather_facts: false
+  tasks:
+    - name: install python2
+      become: yes
+      become_method: sudo
+      raw: sudo apt-get -y install python-simplejson
+
+- hosts: all
+  name: Start Mongo Server
+  gather_facts: true
+  vars:
+    BIND_IP: "0.0.0.0" 
+  tasks:
+    - include: mongo.yml
+    - name: accept Traffic only from {{BIND_IP}} Subnet 
+      become: yes
+      become_method: sudo
+      replace:
+        path: /etc/mongod.conf
+        regexp: '127\.0\.0\.1'
+        replace: "{{ BIND_IP }}"
+        backup: yes
+
+    - name: Restart daemon
+      become: yes
+      become_method: sudo
+      service:
+         name: mongod
+         state: restarted
