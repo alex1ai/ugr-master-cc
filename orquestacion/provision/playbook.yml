@@ -23,7 +23,6 @@
     PORT: "{{ port_nr }}"
     IP: "0.0.0.0"
     GOPATH: "{{ lookup('env','HOME') }}/go"
-    MONGO_IP: "192.168.50.5"
   tasks:
   - name: install system updates for centos systems
     become: yes
