@@ -1,91 +1,37 @@
-# Usage at this moment (5.11.18)
+# Availabe routes (9.1.19)
 
-The webservice was introduced and has some basic functionality to use.
-The current version is always automatically deployed at
+| Method   | Route                | Query    | Description                                                                       |
+|----------|----------------------|----------|-----------------------------------------------------------------------------------|
+| GET      | /                    |          | Get status of webservice                                                          |
+| GET      | /content             | lang, id | Get content as a JSON Response. Query Parameters are optional (will return all)   |
+| POST     | /content             |          | Add/update one instance. Id and Language will be queried acording to posted json. |
+| PUT      | /content             |          | same as POST                                                                      |
+| DELETE   | /content/{lang}/{id} |          | Deletes instance from DB                                                          |
+| GET/POST | /init                |          | Creates Dummy data to initialize DB (test purpose, will be removed)               |
+| GET/POST | /reset               |          | Reset DB (test purpose, will be removed)                                          |
 
-    https://infogration.now.sh/
+For route `/content?lang='es'` for example we get
 
-In order to get ALL the data which is saved you can use
-    
-    curl https://infogration.now.sh/content | python -m json.tool
-
-where the last part is for pretty print and will return
-
+```json
+[
     {
-    "Status": "OK",
-    "Data": [
-        {
-            "Content": {
-                "Id": 1,
-                "Question": "How is life these days?",
-                "Answer": "So good"
-            },
-            "Language": {
-                "Code": "en"
-            },
-            "CreatedAt": "1541455846"
-        },
-        {
-            "Content": {
-                "Id": 2,
-                "Question": "Are 2 questions sufficient?",
-                "Answer": "I do not think so!"
-            },
-            "Language": {
-                "Code": "en"
-            },
-            "CreatedAt": "1541455846"
-        },
-        {
-            "Content": {
-                "Id": 3,
-                "Question": "Are 3 questions sufficient?",
-                "Answer": "I think so!"
-            },
-            "Language": {
-                "Code": "en"
-            },
-            "CreatedAt": "1541455846"
-        },
-        {
-            "Content": {
-                "Id": 2,
-                "Question": "2 preguntas son suficiente?",
-                "Answer": "Creo que no!"
-            },
-            "Language": {
-                "Code": "es"
-            },
-            "CreatedAt": "1541455846"
-        }
-    ]
-    }
-
-
-which includes some dummy data that I created there.
-
-To get all instances of one language one can run
-
-    https://infogration.now.sh/content/{lang}
-
-For lang='es' for example we get
-
+        "question": "test 1",
+        "answer": "test1 answer",
+        "id": 4,
+        "lang": "es",
+        "category": "work",
+        "created_at": "2019-01-09T14:30:40.858+01:00"
+    },
     {
-    "status": "OK",
-    "data": [
-        {
-            "content": {
-                "Id": 2,
-                "Question": "2 preguntas son suficiente?",
-                "Answer": "Creo que no!"
-            },
-            "language": {
-                "Code": "es"
-            },
-            "createdAt": "1541456019"
-        }
-    ]
+        "question": "test 1",
+        "answer": "test1 answer",
+        "id": 9,
+        "lang": "es",
+        "category": "work",
+        "created_at": "2019-01-09T14:30:45.859+01:00"
     }
+]
+```
 
 as an answer. 
 
