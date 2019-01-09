@@ -42,15 +42,27 @@ Deployment through _Now_ is part of **Travis** execution after it passed all tes
 
 ## Provision
 
+### Using GUI of Azure
+
 For easy provisioning on any virtual machine of this webservice, I chose Ansible for its configuration management. Ansible works, in contrast to e.g. Puppet, in a push-way and is a good choice for this kind of project because one doesn't need to install anything on the Client-vm.   
 This Project is deployed in Microsoft's Azure cloud with a low-resourced VM. 
 How to provision to your cloud and more information about the chosen configuration can be found [here](https://github.com/alex1ai/ugr-master-cc/blob/gh-pages/provision.md). 
 
 MV: 40.89.159.84
 
-### Automatic provision
+### Automatic provision via script
 
 As of milestone 4, we can create VMs in Azure automatically via `acopio.sh`. [This](https://github.com/alex1ai/ugr-master-cc/blob/gh-pages/cli-provisioning.md) provides all the documentation and justification for the chosen image, ressources and location. Currently the server is running on Ubuntu 16.04 LTS in France-Central on a cheap Azure virtual machine (B1s).
 
 MV2: 40.89.159.84
 
+### Automatic provision via Vagrant
+
+Vagrant is a controller to create and manage virtual machines from command line. For milestone #5 I added the option to start virtual machines via this tool. Therefore I made to different versions:
+
+  1. [Start webservice locally in 2 VMs](./orquestacion/local/Vagrantfile)
+  2. [Start webservice in Azure subscription](./orquestacion/Vagrantfile)
+  
+More information and documentation is given [here](https://github.com/alex1ai/ugr-master-cc/blob/gh-pages/vagrant_provision.md).
+
+Despliegue Vagrant: mv.servicioclo.ud
