@@ -41,7 +41,7 @@ Vagrant.configure("2") do |config|
       ansible.playbook = "./provision/playbook.yml"
     end
     local.vm.network "private_network", ip: IP_SERVER 
-    local.vm.network "forwarded_port", guest:3000, host:3000  
+    local.vm.network "forwarded_port", guest:3000, host:8080
   end
 end
 
@@ -87,7 +87,7 @@ vagrant up
 and after some time to initialize the machines, we can access the webserver also via localhost (see portforwarding in the Vagrantfile above) by:
 
 ```
-curl localhost:3000
+curl localhost:8080
 {"status": "OK"}%                              
 ```
 
