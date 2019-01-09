@@ -99,6 +99,9 @@ func (db DB) close() error {
 
 func (db DB) reset() {
 	ctx, _ := context.WithTimeout(context.Background(), 10*time.Second)
-	db.client.Database(Database).Collection(Collection).DeleteMany(ctx, nil)
+	_, err := db.client.Database(Database).Collection(Collection).DeleteMany(ctx, nil)
+	if err != nil {
+		log.Error(err)
+	}
 	log.Debug("Deleted everything in database")
 }

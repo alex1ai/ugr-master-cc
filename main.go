@@ -13,7 +13,7 @@ import (
 const (
 	MongoPort = "27017"
 	MongoIp   = "localhost"
-	DEBUG     = true
+	DEBUG     = false
 
 	LangRegex = "^\\w{2}$"
 	IdRegex   = "^[1-9][0-9]*"
@@ -157,7 +157,6 @@ func loggingMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		// Do stuff here
 		log.Info(r.RequestURI)
-
 		next.ServeHTTP(w, r)
 	})
 }

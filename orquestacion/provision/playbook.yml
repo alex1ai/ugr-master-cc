@@ -103,4 +103,3 @@
 
   - name: Run webservice in different process
     shell: "daemon -- {{ go_home_dir }}/bin/ugr-master-cc || nohup {{ go_home_dir }}/bin/ugr-master-cc > /dev/null 2>&1 &" 
-    ignore_errors: true
