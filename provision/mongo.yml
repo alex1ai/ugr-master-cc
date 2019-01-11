@@ -4,16 +4,19 @@
   become_method: sudo
   apt_key:
     keyserver: hkp://keyserver.ubuntu.com:80
-    id: 9DA31620334BD75D9DCB49F368818C72E52529D4
+    id: 9DA31620334BD75D9DCB49F368818C72E52529D4 
 
 - name: Create file list
   become: yes
   become_method: sudo
   lineinfile:
-    line: "deb [ arch=amd64 ] https://repo.mongodb.org/apt/ubuntu xenial/mongodb-org/4.0 multiverse"
+    line: "deb [ arch=amd64 ] https://repo.mongodb.org/apt/ubuntu bionic/mongodb-org/4.0 multiverse"
     dest: /etc/apt/sources.list.d/mongodb-org-4.0.list
     state: present
     create: yes
+
+- name: Update repo
+  apt: update_cache=yes 
 
 - name: Install Mongo-org
   become: yes
@@ -21,7 +24,6 @@
   apt:
     name: mongodb-org
     state: present
-    update_cache: yes
     
 - name: Start mongoDB service
   become: yes

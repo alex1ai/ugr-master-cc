@@ -1,11 +1,4 @@
-#!/bin/bash
-
-az ad sp create-for-rbac > tmp.json
-
-export AZURE_TENANT_ID=$( cat tmp.json | jq '.tenant' | sed 's/"//g' )
-export AZURE_CLIENT_ID=$( cat tmp.json | jq '.appId' | sed 's/"//g' )
-export AZURE_CLIENT_SECRET=$( cat tmp.json | jq '.password' | sed 's/"//g' )
-
-export AZURE_SUBSCRIPTION_ID=$(az account list --query "[?isDefault].id" -o tsv)
-
-rm tmp.json
+export AZURE_TENANT_ID=753a3cc9-671b-4224-877d-56737cb1d8e2
+export AZURE_CLIENT_ID=070ef6cc-3740-4e10-8cc1-24f85dc38920
+export AZURE_CLIENT_SECRET=93da85e2-69bd-4bf3-839b-442d3508f46c
+export AZURE_SUBSCRIPTION_ID=7df8139d-169e-40ce-b319-8ecc367ade36
