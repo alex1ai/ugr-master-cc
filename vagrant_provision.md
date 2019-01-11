@@ -1,21 +1,20 @@
-# Priovision project to different VMs via Vagrant
+# Provision project to different VMs via Vagrant
 
 Here I will document how I made provisioning to different providers (Azure and local) via Vagrant. 
 
 To do so we need the following requirements installed:
 
 - Vagrant
-- Virtualization Hipervisor (VirtualBox to be preferred)
-- [Azure-Vagrant Plugin](https://github.com/Azure/vagrant-azure)
 - Ansible for Provisioning
+- Local provisioning: Virtualization Hipervisor (VirtualBox to be preferred)
+- Azure provisioning: [Azure-Vagrant Plugin](https://github.com/Azure/vagrant-azure)
 
 Follow instructions on their official packages for installation.
 Azure-Vagrant Plugin is easily installed via 
 
 `vagrant plugin install vagrant-azure`
 
-At first I will describe how to get a _local_ Setup up and running (including provisioning). After that we add Azure provisioning.
-If you get the local version to run, you see that Vagrant is functioning correctly.
+At first I will describe how to get a _local_ setup up and running (including provisioning). After that we add Azure provisioning.
 
 ## Provision on the local machine
 
@@ -77,6 +76,13 @@ Furthermore I have modified playbooks in use here (to seperate DB and server con
 
 Here we need to enable MongoDB to be accessed by other other machines instead of only localhost. THIS IS ESSENTIAL. Providing "0.0.0.0" enables connections from any computer basically which suggests a big security issue. For this milestone and testing issues it is okay, but **never use this in production**.
 
+As you can see on the Vagrantfile above, I manually added private IP-addresses to both VMs. With this given I can set the environment variable for the webserver, where to look for the mongodb, in the `server_playbook.yml':
+
+```
+- environment: 
+    MONGO_IP: "192.168.50.2" # IP address of data server
+```
+
 The only thing you have to do to execute everything is (if you are on root level of the project)
 
 ```bash
@@ -107,17 +113,15 @@ Finally you need to install the azure-dummy box via
 
 `$ vagrant box add azure https://github.com/azure/vagrant-azure/raw/v2.0/dummy.box --provider azure`
 
-Last but not least, type `$ vagrant up --provider azure` to start and provision the servers in your Azure subscription.
+Last but not least, type `$ vagrant up` to start and provision the servers in your Azure subscription.
 
 ### Choices made in Vagrantfile
 
-Originally I wanted to do the same as locally - separating service and data in respective VMs. This turned out to be harder than it should be because all of a sudden I got "no resource named XY" errors or ports have not been correctly opened. This is why I refused to spend even more time trying this and went for the simpler solution of just deploying one VM at Azure cloud running Data and Service simultaneously. The next milestone will abstract this separation into Docker containers anyway...
+Provisioning through Azure is nearly a full copy of the local version above, except of 2 minor changes. The first change is you have to use the Azure plugin to create the servers: 
 
 ```ruby
-# -*- mode: ruby -*-
-# vi: set ft=ruby :
-
 require 'vagrant-azure'
+
 # Azure information
 TENANT_ID = ENV['AZURE_TENANT_ID']
 CLIENT_ID = ENV['AZURE_CLIENT_ID']
@@ -127,10 +131,35 @@ SUBSCRIPTION_ID = ENV['AZURE_SUBSCRIPTION_ID']
 # VM specification
 VM_SIZE="Standard_B1s"
 LOCATION="francecentral"
-RESOURCE_GROUP="vagrant"
-NAME="vagrant-server"
+RESOURCE_GROUP="vagrant-info"
+SERVER_NAME="vagrant-server"
+DB_NAME="vagrant-data"
+
+IMAGE="Canonical:UbuntuServer:16.04-LTS:latest"
 
 Vagrant.configure("2") do |config|
+    config.vm.define 'data' do |server|
+        server.vm.box = 'azure'
+        server.vm.provider :azure do |az, override|
+            az.tenant_id = TENANT_ID 
+            az.client_id = CLIENT_ID
+            az.client_secret = CLIENT_SECRET
+            az.subscription_id = SUBSCRIPTION_ID
+
+            az.vm_name = DB_NAME
+            az.vm_size = VM_SIZE
+
+            az.vm_image_urn = IMAGE
+            az.tcp_endpoints = 27017 # Allow MongoDB Connections
+            az.location = LOCATION
+            az.resource_group_name = RESOURCE_GROUP
+        end
+
+        server.vm.provision "ansible" do |ansible|
+            ansible.compatibility_mode = "2.0"
+            ansible.playbook = "./provision/data_playbook.yml"
+        end
+    end
     config.vm.define 'server' do |server|
         server.vm.box = 'azure'
         server.vm.provider :azure do |az, override|
@@ -139,24 +168,34 @@ Vagrant.configure("2") do |config|
             az.client_secret = CLIENT_SECRET
             az.subscription_id = SUBSCRIPTION_ID
 
-	    az.vm_name = NAME
+            az.vm_name = SERVER_NAME
             az.vm_size = VM_SIZE
 
-            # az.vm_image_urn = "canonical:ubuntuserver:16.04-LTS:latest"
-            az.tcp_endpoints = 80
+            az.vm_image_urn = IMAGE
+            az.tcp_endpoints = 80 # Webservice entry point
             az.location = LOCATION
             az.resource_group_name = RESOURCE_GROUP
         end
 
         server.vm.provision "ansible" do |ansible|
             ansible.compatibility_mode = "2.0"
-            ansible.playbook = "./provision/playbook.yml"
+            ansible.playbook = "./provision/server_playbook.yml"
         end
     end
     config.ssh.private_key_path = '~/.ssh/id_rsa'
 end
+
 ```
 
-The script is straightforward to understand. The choices of image/location/size are the same as made and justified in the previous milestone. `az.tcp_endpoints = 80` automatically opens port 80 for server access.
+The script is straightforward to understand. The choices of image/location/size are the same as made and justified in the previous milestone. `az.tcp_endpoints = 80` automatically opens port 80 for server access, same with port 27017 for MongoDB.
 
-In the end use `vagrant halt` to stop the server again and prevent money loss.
+As they are provisioned together, they are also deployed in the same virtual network automatically by Vagrant. This means we can ping/reach the other virtual machine via its machine name (e.g. `$ ping vagrant-data` from vagrant-server).
+
+For MongoDB location, again, the MONGO_IP environment variable is set in the server_provision.yml file, in this case `MONGO_IP: vagrant-data`.
+
+The IP Adress of the server can be found when looking through the output of `az vm list-ip-addresses`
+
+Screenshot after deploying:
+![vagrant deployment](https://github.com/alex1ai/ugr-master-cc/blob/gh-pages/orquestacion/screen.png)
+
+In the end use `vagrant halt` to stop the server again and prevent money loss (or destroy it for good).
