@@ -2,6 +2,7 @@
 # vi: set ft=ruby :
 
 require 'vagrant-azure'
+
 # Azure information
 TENANT_ID = ENV['AZURE_TENANT_ID']
 CLIENT_ID = ENV['AZURE_CLIENT_ID']
@@ -11,8 +12,11 @@ SUBSCRIPTION_ID = ENV['AZURE_SUBSCRIPTION_ID']
 # VM specification
 VM_SIZE="Standard_B1s"
 LOCATION="francecentral"
-RESOURCE_GROUP="vagrantinfo"
-NAME="vagrant-server"
+RESOURCE_GROUP="vagrant-info"
+SERVER_NAME="vagrant-server"
+DB_NAME="vagrant-data"
+
+IMAGE="Canonical:UbuntuServer:16.04-LTS:latest"
 
 Vagrant.configure("2") do |config|
     config.vm.define 'data' do |server|
@@ -23,20 +27,18 @@ Vagrant.configure("2") do |config|
             az.client_secret = CLIENT_SECRET
             az.subscription_id = SUBSCRIPTION_ID
 
-			az.vm_name = "vagrant-data"
+			az.vm_name = DB_NAME
             az.vm_size = VM_SIZE
 
-            az.vm_image_urn = "Canonical:UbuntuServer:16.04-LTS:latest"
-            az.tcp_endpoints = [80,27017]
+            az.vm_image_urn = IMAGE
+            az.tcp_endpoints = 27017 # Allow MongoDB Connections
             az.location = LOCATION
             az.resource_group_name = RESOURCE_GROUP
-			az.dns_name = "data"
         end
 
         server.vm.provision "ansible" do |ansible|
             ansible.compatibility_mode = "2.0"
 			ansible.playbook = "./provision/data_playbook.yml"
-			#ansible.verbose = "vvv"
         end
     end
     config.vm.define 'server' do |server|
@@ -47,20 +49,18 @@ Vagrant.configure("2") do |config|
             az.client_secret = CLIENT_SECRET
             az.subscription_id = SUBSCRIPTION_ID
 
-			az.vm_name = NAME
+			az.vm_name = SERVER_NAME
             az.vm_size = VM_SIZE
 
-            az.vm_image_urn = "Canonical:UbuntuServer:16.04-LTS:latest"
-            az.tcp_endpoints = 80
+            az.vm_image_urn = IMAGE
+			az.tcp_endpoints = 80 # Webservice entry point
             az.location = LOCATION
             az.resource_group_name = RESOURCE_GROUP
-        	az.dns_name = "server"
 		end
 
         server.vm.provision "ansible" do |ansible|
             ansible.compatibility_mode = "2.0"
 			ansible.playbook = "./provision/server_playbook.yml"
-			#ansible.verbose = "vvv"
         end
     end
     config.ssh.private_key_path = '~/.ssh/id_rsa'
