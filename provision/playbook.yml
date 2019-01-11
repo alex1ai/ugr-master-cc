@@ -1,4 +1,12 @@
 ---
+- name: dependency provisioning
+  hosts: all
+  gather_facts: false
+  tasks:
+    - name: install python2
+      become: yes
+      become_method: sudo
+      raw: sudo apt-get -y install python-simplejson
 
 - name: Real provisioning
   hosts: all 
@@ -6,14 +14,14 @@
   become_method: sudo
   vars:
     go_dir: "/usr/local/go/bin"
-    go_home_dir: "/var/www/go"
+    go_home_dir: "{{ lookup('env','HOME') }}/go"
     project_dir: "{{ go_home_dir }}/src/github.com/alex1ai/ugr-master-cc"
     port_nr: 3000
-    packages: ["git"]
+    packages: ["git", "daemon"]
   environment:
     PORT: "{{ port_nr }}"
     IP: "0.0.0.0"
-    GOPATH: "{{ go_home_dir }}"
+    GOPATH: "{{ lookup('env','HOME') }}/go"
   tasks:
   - name: install system updates for centos systems
     become: yes
@@ -33,12 +41,10 @@
     action: >
       {{ ansible_pkg_mgr }} name=git state=present
   
-  - name: Install daemonize
+  - name: Install daemon on debian based system
     become: true
     become_method: sudo
-    script: ./install_go-daemon.sh
-    args:
-      creates: /usr/bin/god
+    apt: name=daemon state=present
     when: ansible_facts['os_family'] == "Debian"
 
   - name: Download and extract Go
@@ -87,11 +93,9 @@
   
   - name: Kill old server if running
     shell: "if pgrep ugr-master-cc; then pkill ugr-master-cc; fi"
-
-
-  - name: Install and start mongodb
+  
+  - name: Initiate mongodb
     include: mongo.yml
-    
 
   - name: Run webservice in different process
-    command: "god {{ go_home_dir }}/bin/ugr-master-cc > output.txt"
+    shell: "daemon -- {{ go_home_dir }}/bin/ugr-master-cc || nohup {{ go_home_dir }}/bin/ugr-master-cc > /dev/null 2>&1 &" 
