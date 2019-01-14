@@ -1,4 +1,4 @@
-# Provision project to different VMs via Vagrant
+# Orchestration project via Vagrant
 
 Here I will document how I made provisioning to different providers (Azure and local) via Vagrant. 
 
@@ -103,7 +103,7 @@ Everything working locally! Let's go further and deploy in Azure...
 
 At first, make sure you are logged in locally in your azure subscription. You can do that through `$ az login`.
 
-Next, you will need to set some environment variables. Either follow these steps at ["Create an Azure Active Directory (AAD) Application"](https://github.com/Azure/vagrant-azure) or if you have the package _jq_ installed you can also just type `$ source set_env.sh` from the orchestration folder - this will set all needed environment variables automatically.
+Next, you will need to set some environment variables. Either follow these steps at ["Create an Azure Active Directory (AAD) Application"](https://github.com/Azure/vagrant-azure) or if you have the package _jq_ installed you can also just use the helper script `$ sh create_env.sh` once and then you only need to`$ source set_env.sh` in the future from the orchestration folder - this will set all needed environment variables automatically.
 
 If you haven't already, install the Azure-Vagrant plugin now
 
@@ -199,3 +199,11 @@ Screenshot after deploying:
 ![vagrant deployment](https://github.com/alex1ai/ugr-master-cc/blob/gh-pages/orquestacion/screen.png)
 
 In the end use `vagrant halt` to stop the server again and prevent money loss (or destroy it for good).
+
+# Vagrantfile from Antonio Javier Cabrera
+
+I cloned the repository from @javiercabrera's and changed the name of the resource group in the Vagrantfile (because it conflicts with my created ressource group "CC"). In exchange he started my webserver on his Azure via Vagrant, as documented in his [documentation](https://github.com/javiercabrera184/ProyectoCC/blob/master/docs/Hito5.md).
+
+[](https://github.com/alex1ai/ugr-master-cc/blob/gh-pages/orquestacion/antonio.png)
+[](https://github.com/alex1ai/ugr-master-cc/blob/gh-pages/orquestacion/antonio1.png)
+
