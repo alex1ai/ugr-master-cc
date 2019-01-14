@@ -204,6 +204,6 @@ In the end use `vagrant halt` to stop the server again and prevent money loss (o
 
 I cloned the repository from @javiercabrera's and changed the name of the resource group in the Vagrantfile (because it conflicts with my created ressource group "CC"). In exchange he started my webserver on his Azure via Vagrant, as documented in his [documentation](https://github.com/javiercabrera184/ProyectoCC/blob/master/docs/Hito5.md).
 
-[](https://github.com/alex1ai/ugr-master-cc/blob/gh-pages/orquestacion/antonio.png)
-[](https://github.com/alex1ai/ugr-master-cc/blob/gh-pages/orquestacion/antonio1.png)
+![](https://github.com/alex1ai/ugr-master-cc/blob/gh-pages/orquestacion/antonio.png)
+![](https://github.com/alex1ai/ugr-master-cc/blob/gh-pages/orquestacion/antonio1.png)
 
