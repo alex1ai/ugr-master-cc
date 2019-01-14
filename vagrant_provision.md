@@ -205,5 +205,8 @@ In the end use `vagrant halt` to stop the server again and prevent money loss (o
 I cloned the repository from @javiercabrera's and changed the name of the resource group in the Vagrantfile (because it conflicts with my created ressource group "CC"). In exchange he started my webserver on his Azure via Vagrant, as documented in his [documentation](https://github.com/javiercabrera184/ProyectoCC/blob/master/docs/Hito5.md).
 
 ![](https://github.com/alex1ai/ugr-master-cc/blob/gh-pages/orquestacion/antonio.png)
+
+And after a lot of provisioning output we can get the server ip via `$ az vm list-ip-addresses` to test the service:
+
 ![](https://github.com/alex1ai/ugr-master-cc/blob/gh-pages/orquestacion/antonio1.png)
 
