@@ -56,7 +56,7 @@ As of milestone 4, we can create VMs in Azure automatically via `acopio.sh`. [Th
 
 MV2: 40.89.159.84
 
-### Automatic provision via Vagrant
+## Orchestration via Vagrant
 
 Vagrant is a controller to create and manage virtual machines from command line. For milestone #5 I added the option to start virtual machines via this tool. Therefore I made to different versions:
 
@@ -65,4 +65,4 @@ Vagrant is a controller to create and manage virtual machines from command line.
   
 More information and documentation is given [here](https://github.com/alex1ai/ugr-master-cc/blob/gh-pages/vagrant_provision.md).
 
-Despliegue Vagrant: mv.servicioclo.ud
+Despliegue Vagrant: 20.188.38.46
