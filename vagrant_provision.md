@@ -21,7 +21,7 @@ At first I will describe how to get a _local_ setup up and running (including pr
 I am going to create a seperate VM for Webserver and Database respectively. For this my Vagrantfile looks like this:
 
 ```ruby
-BOX = "ubuntu/xenial64"
+BOX = "ubuntu/xenial64" # Ubuntu 16.04 with VirtualBox Provider
 IP_DATA = "192.168.50.2"
 IP_SERVER = "192.168.50.3"
 
@@ -74,7 +74,7 @@ Furthermore I have modified playbooks in use here (to seperate DB and server con
          state: restarted
 ```
 
-Here we need to enable MongoDB to be accessed by other other machines instead of only localhost. THIS IS ESSENTIAL. Providing "0.0.0.0" enables connections from any computer basically which suggests a big security issue. For this milestone and testing issues it is okay, but **never use this in production**.
+Here we need to enable MongoDB to be accessed by other other machines instead of only localhost. THIS IS ESSENTIAL. Providing "0.0.0.0" enables connections from any computer basically which suggests a big security issue. For this milestone and testing issues it is okay, but **never use this in production**. After setting this section, the daemon will be restarted.
 
 As you can see on the Vagrantfile above, I manually added private IP-addresses to both VMs. With this given I can set the environment variable for the webserver, where to look for the mongodb, in the `server_playbook.yml':
 
@@ -94,7 +94,7 @@ and after some time to initialize the machines, we can access the webserver also
 
 ```
 curl localhost:8080
-{"status": "OK"}%                              
+{"status": "OK"}                              
 ```
 
 Everything working locally! Let's go further and deploy in Azure...
@@ -103,7 +103,7 @@ Everything working locally! Let's go further and deploy in Azure...
 
 At first, make sure you are logged in locally in your azure subscription. You can do that through `$ az login`.
 
-Next, you will need to set some environment variables. Either follow these steps at ["Create an Azure Active Directory (AAD) Application"](https://github.com/Azure/vagrant-azure) or if you have the package _jq_ installed you can also just use the helper script `$ sh create_env.sh` once and then you only need to`$ source set_env.sh` in the future from the orchestration folder - this will set all needed environment variables automatically.
+Next, you will need to set some environment variables. Either follow these steps at ["Create an Azure Active Directory (AAD) Application"](https://github.com/Azure/vagrant-azure) or if you have the package _jq_ installed you can also just use the helper script `$ sh create_env.sh` once and then you only need to`$ source set_env.sh` in the future from the 'orchestacion' folder - this will set all needed environment variables automatically.
 
 If you haven't already, install the Azure-Vagrant plugin now
 
@@ -189,7 +189,7 @@ end
 
 The script is straightforward to understand. The choices of image/location/size are the same as made and justified in the previous milestone. `az.tcp_endpoints = 80` automatically opens port 80 for server access, same with port 27017 for MongoDB.
 
-As they are provisioned together, they are also deployed in the same virtual network automatically by Vagrant. This means we can ping/reach the other virtual machine via its machine name (e.g. `$ ping vagrant-data` from vagrant-server).
+As they are provisioned together, they are also deployed in the same virtual network automatically by Vagrant. This means we can ping/reach the other virtual machine via its machine name `az.vm_name` (e.g. `$ ping vagrant-data` from vagrant-server).
 
 For MongoDB location, again, the MONGO_IP environment variable is set in the server_provision.yml file, in this case `MONGO_IP: vagrant-data`.
 
