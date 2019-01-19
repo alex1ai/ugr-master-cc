@@ -3,17 +3,19 @@ package main
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/alex1ai/ugr-master-cc/authentication"
 	"github.com/gorilla/mux"
 	log "github.com/sirupsen/logrus"
 	"net/http"
 	"os"
 	"strconv"
+	"strings"
 )
 
 const (
 	MongoPort = "27017"
 	MongoIp   = "localhost"
-	DEBUG     = false
+	DEBUG     = true
 
 	LangRegex = "^\\w{2}$"
 	IdRegex   = "^[1-9][0-9]*"
@@ -116,6 +118,24 @@ func DeleteHandler(db *DB) func(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+func LoginHandler(w http.ResponseWriter, r *http.Request) {
+	decoder := json.NewDecoder(r.Body)
+
+	var user authentication.User
+	if err := decoder.Decode(&user); err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+	}
+
+	tokenString, err := authentication.CreateToken(user.Name, user.Password)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusForbidden)
+	}
+	_, err = w.Write([]byte(tokenString))
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+	}
+}
+
 func initHandler(db *DB) func(w http.ResponseWriter, r *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
 		db.populate(10)
@@ -146,6 +166,7 @@ func Router(db *DB) *mux.Router {
 
 	r.HandleFunc("/init", initHandler(db))
 	r.HandleFunc("/reset", resetHandler(db))
+	r.HandleFunc("/login", LoginHandler).Methods("POST")
 
 	r.HandleFunc("/", RootHandler)
 	r.HandleFunc("/{.*}", ErrorHandler)
@@ -157,6 +178,26 @@ func loggingMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		// Do stuff here
 		log.Info(r.RequestURI)
+		next.ServeHTTP(w, r)
+	})
+}
+
+func LoggedInMiddleware(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		log.Info(r.Header)
+		if r.URL.Path != "/login" && r.Method != http.MethodGet {
+			token := r.Header.Get("Authorization")
+			if token != "" {
+				token = strings.Split(token, "\\w")[1]
+				_, ok := authentication.ValidateToken(token)
+
+				if ok {
+					next.ServeHTTP(w, r)
+				} else {
+					http.Error(w, "False credentials", http.StatusForbidden)
+				}
+			}
+		}
 		next.ServeHTTP(w, r)
 	})
 }
@@ -188,7 +229,8 @@ func main() {
 
 	// Add middleware
 	r.Use(loggingMiddleware)
-
+	r.Use(LoggedInMiddleware)
+	//loggedRouter := handlers.LoggingHandler(logFile, r)
 	log.Infof("Starting web server on %s:%s", ip, port)
 	// Bind to a port and pass our router in
 	log.Fatal(http.ListenAndServe(fmt.Sprintf("%s:%s", ip, port), r))

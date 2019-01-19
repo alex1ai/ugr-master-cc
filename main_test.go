@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/alex1ai/ugr-master-cc/authentication"
 	"github.com/mongodb/mongo-go-driver/bson"
 	"net/http"
 	"net/http/httptest"
@@ -179,4 +180,36 @@ func TestPostHandler(t *testing.T) {
 		t.Errorf("handler did not pass on second POST of same instance,  returned %d ", code)
 	}
 
+}
+
+func TestLoginHandler(t *testing.T) {
+	users := []struct {
+		U    authentication.User
+		Pass bool
+	}{
+		{authentication.User{Name: "test", Password: "test123"}, true},
+		{authentication.User{Name: "test", Password: "test1234"}, false},
+		{authentication.User{Name: "abc", Password: "test1234"}, false},
+	}
+	for _, user := range users {
+
+		js, err := json.Marshal(user.U)
+		// First request
+		req, err := http.NewRequest("POST", "/login", strings.NewReader(string(js)))
+		if err != nil {
+			t.Error(err)
+		}
+
+		rr := httptest.NewRecorder()
+		router := Router(db)
+		router.ServeHTTP(rr, req)
+
+		tokenString := rr.Body.String()
+
+		if len(tokenString) == 0 && user.Pass{
+			t.Errorf("Valid user %s reveiced illegal tokenString, found %s", user.U, tokenString)
+		} else if len(tokenString) > 0 && !user.Pass && rr.Code != http.StatusForbidden{
+			t.Errorf("Unvalid user %s received legal tokenString, found %s with status %d", user.U, tokenString, rr.Code)
+		}
+	}
 }
