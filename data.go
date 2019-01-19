@@ -36,7 +36,7 @@ func (db DB) populate(n int) error {
 	content := make([]interface{}, n)
 	for i := 0; i < n; i++ {
 		content[i] = createDummyContent(i + 1)
-		time.Sleep(1*time.Second)
+		time.Sleep(1 * time.Second)
 	}
 
 	ctx, _ := context.WithTimeout(context.Background(), 1*time.Second)
