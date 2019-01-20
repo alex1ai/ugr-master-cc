@@ -1,0 +1,13 @@
+version: '3'
+services:
+  data:
+    image: mongo
+    restart: always
+    command: --smallfiles
+  web:
+    build: .
+    environment:
+      - MONGO_IP=data
+    ports:
+     - "3000:3000"
+

@@ -1,24 +1,22 @@
-# STEP 1 build executable binary
+FROM golang:1.11-alpine AS build
 
-FROM golang:alpine as builder
+# Install tools required for project
+RUN apk update
+RUN apk add --no-cache git
+RUN go get github.com/alex1ai/ugr-master-cc
 
-# Install git
-RUN apk update && apk add git 
-
-COPY . $GOPATH/src/github.com/alex1ai/infogration
-WORKDIR $GOPATH/src/github.com/alex1ai/infogration
-
-# get dependancies
+WORKDIR /go/src/github.com/alex1ai/ugr-master-cc
 RUN go get -d
+ENV CGO_ENABLED=0 GOOS=linux GOARCH=amd64
+RUN go build -o /bin/infogration
+ENTRYPOINT ["/bin/infogration"]
 
-#build the binary
-RUN CGO_ENABLED=0 go build -ldflags "-s -w" -o /go/bin/main
-
-# STEP 2 build a small image
-# This is needed as everything else would end up in a huge container (>250MB)
-# start from scratch
+# This results in a single layer image
 FROM scratch
-
-# Copy our static executable
-COPY --from=builder /go/bin/main /go/bin/main
-ENTRYPOINT ["/go/bin/main"]
+COPY --from=build /bin/infogration /infogration
+# Create no-root user to execute the command
+#RUN groupadd -r infogration && useradd --no-log-init -r -g infogration infogration
+#USER infogration
+#ENV MONGO_IP="data"
+ENTRYPOINT ["/infogration"]
+#CMD ["--help"]
