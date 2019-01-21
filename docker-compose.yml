@@ -9,5 +9,4 @@ services:
     environment:
       - MONGO_IP=data
     ports:
-      - "3000:3000"
-
+      - "80:3000"
