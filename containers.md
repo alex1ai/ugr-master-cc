@@ -138,3 +138,33 @@ Running `$ sudo docker-compose up -d` will start the webservice in the docker en
  
  **Warning**: Using the Dockerhub version only spins up the service and has no database connected. Yet when starting the service will look for a MongoDB service running somewhere. Therefore you need to provide a MongoDB-IP (and Port if not default) via environment variable when starting the docker hub container (add parameter -e MONGO_IP={ipaddress} to docker run).
  
+# Terminating project itself: Authorization
+
+While I created a docker environment for this project in this milestone, I also made a huge step towards finising this project.
+
+I introduced autorization in order to control the usage of the webservice. Only authorized persons should be able to edit content, but everyone can retrieve content via the GET routes.
+
+Therefore, I leveraged JWT in order to provide temporal access to all routes after login. 
+A person can not register himself easily (important for my scenario) but can be added by other authorized persons. 
+
+Example time flow for deleting something:
+```
+Client: POST {"name": "example", pass: "asdf"} /login
+Server: DB-Lookup if user exsists and password hashes match.
+  Everything fine: Send JWT to Client + Header=StatusOK
+  Wrong credentials: Header=StatusForbidden or StatusBadRequest
+Client: 
+  JWT-Token received -> Store locally and use in further requests in header Authorization=Bearer $TOKEN
+  StatusForbidden received -> Try again or let it be
+  
+  DELETE /content/de/1 , Header variable: Authorization=Bearer $TOKEN
+Server: 
+  1.  Validate JWT
+  2.  If valid: execute deletion of specified content, return StatusNoContent on success
+      Else: return StatusForbidden
+
+```
+
+The users are stored in the same MongoDB-Database as the content of the webpage. Therefore a new Collection "users" is created. Every received plaintext password (or front-end sha-hash) will be encrypted by bcrypt befored being stored in the collection.
+
+I also created a default admin user, which is automatically created at server startup. This ensures that always someone can edit and add more content to the service. 
