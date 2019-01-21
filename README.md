@@ -1,8 +1,16 @@
 [![Build Status](https://travis-ci.org/alex1ai/ugr-master-cc.svg?branch=master)](https://travis-ci.org/alex1ai/ugr-master-cc)
+[![Docker automated](https://img.shields.io/docker/automated/alexgrimm/infogration-backend.svg)](https://cloud.docker.com/repository/docker/alexgrimm/infogration-backend/general)
+[![Docker status](https://img.shields.io/docker/build/alexgrimm/infogration-backend.svg)](https://cloud.docker.com/repository/docker/alexgrimm/infogration-backend/general)
 
-# infogration-rest
+# infogration-backend
 
 The usage and routes of the most recent version is documented [here](https://github.com/alex1ai/ugr-master-cc/blob/gh-pages/usage.md).
+
+## Description
+
+This project is a RESTful WebService, which will be used for _infogration_, an Android app, which I developed in a previous class in Germany.
+It answers the most important questions asked by refugees coming to Germany. Questions range from job-hunting, housing to everyday-life. The content is created by mentors of Diakonie Würzburg, an institution which works with young refugees on a daily basis.
+At the moment all the questions and answers are hard-coded in the application, which is undesirable as changes should be made by other persons, too. 
 
 ## Local Installation and execution
 
@@ -14,13 +22,7 @@ go get https://github.com/alex1ai/ugr-master-cc
 cd $GOPATH/src/github.com/alex1ai/ugr-master-cc
 go build & ./ugr-master-cc
 ```
-which will start the service locally on 0.0.0.0:3000 by default. Set environment variables $IP and/or $PORT to change.
-
-## Description
-
-This project is a RESTful WebService, which will be used for _infogration_, an Android app, which I developed in a previous class in Germany.
-It answers the most important questions asked by refugees coming to Germany. Questions range from job-hunting, housing to everyday-life. The content is created by mentors of Diakonie Würzburg, an institution which works with young refugees on a daily basis.
-At the moment all the questions and answers are hard-coded in the application, which is undesirable as changes should be made by other persons, too. 
+which will start the service locally on 0.0.0.0:3000 by default. Set environment variables $API_IP and/or $API:PORT to change.
 
 ## Architecture
 
@@ -29,9 +31,8 @@ This service stores the data which will be requested (get) by the Android-App, a
 ### Highlights:
 - Microservice-based in order to have good maintainability and seperation of concerns.
 - Go REST-API for communication with App and GUI, I use [Gorilla Mux](https://github.com/gorilla/mux) router as this is the mostly used one in Go. (Service #1)
-- Messenger-service between the microservices will be [RabbitMQ](https://github.com/streadway/amqp) as this 'is the most widely deployed open source message broker'.
 - NoSQL data storage service with MongoDB, will run as a stand-alone service (Serivce #2)
-- Authentication of normal users (get info only) and admins (edit content) (Middleware)
+- Authentication of users to edit/add/delete content (Middleware)
 
 ## Deployment
 Deployment https://infogration.now.sh
@@ -66,3 +67,14 @@ Vagrant is a controller to create and manage virtual machines from command line.
 More information and documentation is given [here](https://github.com/alex1ai/ugr-master-cc/blob/gh-pages/vagrant_provision.md).
 
 Despliegue Vagrant: 20.188.38.46
+
+## Containers
+
+The project can be deployed with Docker (docker-compose) and the service api is deployed as an image on [Docker Hub](https://cloud.docker.com/repository/docker/alexgrimm/infogration-backend) as well.
+
+If you had docker-compose locally installed you can directly start everything with the provided docker-compose.yml. 
+You can also run the service with `sudo docker run --rm -e MONGO_IP={IP of running MongoDB} alexgrimm/infogration-backend` if you have a MongoDB running somewhere.
+
+Everything about the containers and how to run them is documented [here](https://github.com/alex1ai/ugr-master-cc/blob/gh-pages/containers.md).
+
+Contenedor: TODO
