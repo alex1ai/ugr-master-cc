@@ -17,16 +17,11 @@ type User struct {
 	Password string `json:"pass" bson:"pass"`
 }
 
-const (
-	DbCollection = "users"
-)
-
-// Hash for password test123
-//var users = []User{{"test", "$2a$10$8ZCqEdkEjy46HJWcAOYk5eiTBpCqddQUkMf1wn6DbmysndMP1knWm"},}
 
 const (
 	// TODO: Secret should be env variable
 	AUTHSECRET     = "akskdjfkölkjaksdASDFAWERkmdlaksdfajdfi;HDKzuiwehrjahljhfaiwulezrualihds"
+	DbCollection = "users"
 	tokenValidTime = time.Minute * time.Duration(1)
 )
 
