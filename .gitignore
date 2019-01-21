@@ -1,3 +1,4 @@
 .idea
 ugr-master-cc
 .vagrant
+secrets.env

@@ -11,6 +11,11 @@ import (
 	"time"
 )
 
+const (
+	LangRegex = "^\\w{2}$"
+	IdRegex   = "^[1-9][0-9]*"
+)
+
 func errorPanic(w http.ResponseWriter, err error) {
 	if err != nil {
 		log.Fatal(err)

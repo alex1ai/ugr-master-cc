@@ -6,6 +6,8 @@ services:
     command: --smallfiles
   web:
     build: .
+    env_file:
+      - secrets.env
     environment:
       - MONGO_IP=data
     ports:

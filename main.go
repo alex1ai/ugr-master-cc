@@ -15,10 +15,24 @@ const (
 	MongoPort = "27017"
 	MongoIp   = "localhost"
 	DEBUG     = true
-
-	LangRegex = "^\\w{2}$"
-	IdRegex   = "^[1-9][0-9]*"
 )
+
+func checkAndSetEnvSecrets(){
+	vars := map[string]string {
+		"ADMIN_PW": "admin",
+		"JWT_SECRET": "nasdfta6svdf5753v15v2763561256v35ruzstfbatszudtf7651v6t",
+	}
+	for k,v := range vars {
+		set := os.Getenv(k)
+		if set == "" {
+			log.Warnf("You did not set env variable %s, using default value. Don't do this", k)
+			if err := os.Setenv(k, v); err != nil {
+				log.Fatalf("Could not set default env variable %s", k)
+			}
+
+		}
+	}
+}
 
 func Router(db *data.DB) *mux.Router {
 	r := mux.NewRouter()
@@ -42,9 +56,11 @@ func Router(db *data.DB) *mux.Router {
 }
 
 func main() {
-
+	// Specify where to run webservice
 	port := getEnv("API_PORT", "3000")
 	ip := getEnv("API_IP", "0.0.0.0")
+
+	// Set Logfile
 	home := os.Getenv("HOME")
 	logPath := getEnv("LOG_FILE", home+"/logfile")
 	logFile := initLogger(logPath)
@@ -52,25 +68,27 @@ func main() {
 		_ = logFile.Close()
 	}()
 
+	// Check secret env variables or set defaults
+	checkAndSetEnvSecrets()
+
 	// Initialize Datebase
 	db := data.DB{}
+	defer func() {
+		_ = db.Close()
+	}()
 	mPort := getEnv("MONGO_PORT", MongoPort)
 	mPortI, err := strconv.Atoi(mPort)
 	if err != nil {
 		log.Fatalf("Specified MONGO_PORT is not a number, found: %s", mPort)
-		panic(err)
+		os.Exit(1)
 	}
 	mIp := getEnv("MONGO_IP", MongoIp)
 	err = db.Connect(mIp, mPortI)
 
 	if err != nil {
 		log.Fatal(err)
-		panic(err)
+		os.Exit(1)
 	}
-
-	defer func() {
-		_ = db.Close()
-	}()
 
 	r := Router(&db)
 
@@ -82,11 +100,10 @@ func main() {
 
 	// Make sure admin user is registered
 	_, err = authentication.RegisterAdmin(&db)
-
 	if err != nil {
 		log.Error("Could not register admin user or database problems")
 	}
 
-	// Bind to a port and pass our router in
+	// Start server
 	log.Fatal(http.ListenAndServe(fmt.Sprintf("%s:%s", ip, port), r))
 }

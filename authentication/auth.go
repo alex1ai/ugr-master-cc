@@ -9,6 +9,7 @@ import (
 	"github.com/mongodb/mongo-go-driver/bson"
 	log "github.com/sirupsen/logrus"
 	"golang.org/x/crypto/bcrypt"
+	"os"
 	"time"
 )
 
@@ -19,11 +20,13 @@ type User struct {
 
 
 const (
-	// TODO: Secret should be env variable
-	AUTHSECRET     = "akskdjfkölkjaksdASDFAWERkmdlaksdfajdfi;HDKzuiwehrjahljhfaiwulezrualihds"
 	DbCollection = "users"
 	tokenValidTime = time.Minute * time.Duration(1)
 )
+
+func getSecret() []byte{
+	return []byte(os.Getenv("JWT_SECRET"))
+}
 
 func CreateToken(userName string, password string, db *data.DB) (string, error) {
 	if !checkPassword(userName, password, db) {
@@ -38,7 +41,7 @@ func CreateToken(userName string, password string, db *data.DB) (string, error) 
 	})
 
 	// Sign and get the complete encoded token as a string using the AUTHSECRET
-	return token.SignedString([]byte(AUTHSECRET))
+	return token.SignedString(getSecret())
 }
 
 func ValidateToken(tokenString string) (jwt.MapClaims, bool) {
@@ -51,8 +54,7 @@ func ValidateToken(tokenString string) (jwt.MapClaims, bool) {
 			return nil, fmt.Errorf("unexpected signing method: %v", token.Header["alg"])
 		}
 
-		// AUTHSECRET is a []byte containing your AUTHSECRET, e.g. []byte("my_secret_key")
-		return []byte(AUTHSECRET), nil
+		return getSecret(), nil
 	})
 	if err != nil {
 		return nil, false
@@ -99,13 +101,22 @@ func checkPassword(userName string, password string, db *data.DB) bool {
 }
 
 func RegisterAdmin(db *data.DB) (created bool, err error) {
+	getSecret()
 	if !userNameIsRegistered("admin", db) {
 		collection := db.Client.Database(data.Database).Collection(DbCollection)
 		ctx, cancel := context.WithTimeout(context.Background(), 1*time.Second)
 		defer cancel()
-		adminUser := User{"admin", "$2a$10$Is68fj8SktejE4mPz8AII.xvU.kTw2.7JgAfrvMmRrD4.Lku1Xngq"}
+		pw := os.Getenv("ADMIN_PW")
+		if pw == "" {
+			return false, errors.New("could not find env variable ADMIN_PW. Make sure to set it on server start")
+		}
+		hash, err := bcrypt.GenerateFromPassword([]byte(pw), bcrypt.DefaultCost)
+		if err != nil {
+			return false, err
+		}
+		adminUser := User{"admin", string(hash)}
 
-		_, err := collection.InsertOne(ctx, adminUser)
+		_, err = collection.InsertOne(ctx, adminUser)
 
 		return true, err
 	}
