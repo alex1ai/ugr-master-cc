@@ -1,4 +1,4 @@
-package main
+package data
 
 import (
 	"context"
@@ -7,17 +7,23 @@ import (
 	"github.com/mongodb/mongo-go-driver/mongo/options"
 	"github.com/mongodb/mongo-go-driver/mongo/readpref"
 	log "github.com/sirupsen/logrus"
+	"math/rand"
 	"time"
 )
 
+var (
+	Database   = "info"
+	Collection = "content"
+)
+
 type DB struct {
-	client *mongo.Client
+	Client *mongo.Client
 }
 
-func (db *DB) connect(ip string, port int) (err error) {
+func (db *DB) Connect(ip string, port int) (err error) {
 	log.Infof("Connecting to Mongo Database, make sure it is running on %s:%d", ip, port)
 	ctx, _ := context.WithTimeout(context.Background(), 5*time.Second)
-	db.client, err = mongo.Connect(ctx, fmt.Sprintf("mongodb://%s:%d", ip, port))
+	db.Client, err = mongo.Connect(ctx, fmt.Sprintf("mongodb://%s:%d", ip, port))
 
 	if err != nil {
 		return err
@@ -25,13 +31,13 @@ func (db *DB) connect(ip string, port int) (err error) {
 
 	// Test reaching the DB
 	ctx, _ = context.WithTimeout(context.Background(), 2*time.Second)
-	err = db.client.Ping(ctx, readpref.Primary())
+	err = db.Client.Ping(ctx, readpref.Primary())
 	return
 }
 
-func (db DB) populate(n int) error {
+func (db DB) Populate(n int) error {
 
-	collection := db.client.Database(Database).Collection(Collection)
+	collection := db.Client.Database(Database).Collection(Collection)
 
 	content := make([]interface{}, n)
 	for i := 0; i < n; i++ {
@@ -45,9 +51,9 @@ func (db DB) populate(n int) error {
 	return err
 }
 
-func (db DB) query(query map[string]interface{}) ([] Content, error) {
+func (db DB) Query(query map[string]interface{}) ([]Content, error) {
 
-	collection := db.client.Database(Database).Collection(Collection)
+	collection := db.Client.Database(Database).Collection(Collection)
 
 	ctx, _ := context.WithTimeout(context.Background(), 10*time.Second)
 	cur, err := collection.Find(ctx, query)
@@ -70,9 +76,9 @@ func (db DB) query(query map[string]interface{}) ([] Content, error) {
 
 }
 
-func (db DB) update(filter interface{}, replacement interface{}) (bool, error) {
+func (db DB) Update(filter interface{}, replacement interface{}) (bool, error) {
 	ctx, _ := context.WithTimeout(context.Background(), 10*time.Second)
-	coll := db.client.Database(Database).Collection(Collection)
+	coll := db.Client.Database(Database).Collection(Collection)
 
 	opts := options.ReplaceOptions{}
 	// If lang and id not there yet, this represents the same as a PUT request, i.e. creating a new Document
@@ -82,9 +88,9 @@ func (db DB) update(filter interface{}, replacement interface{}) (bool, error) {
 	return ex != nil, err
 }
 
-func (db DB) delete(instanceQuery interface{}) (*mongo.DeleteResult, error) {
+func (db DB) Delete(instanceQuery interface{}) (*mongo.DeleteResult, error) {
 	ctx, _ := context.WithTimeout(context.Background(), 10*time.Second)
-	coll := db.client.Database(Database).Collection(Collection)
+	coll := db.Client.Database(Database).Collection(Collection)
 
 	del, err := coll.DeleteOne(ctx, instanceQuery)
 	log.Debug(del.DeletedCount)
@@ -92,16 +98,24 @@ func (db DB) delete(instanceQuery interface{}) (*mongo.DeleteResult, error) {
 	return del, err
 }
 
-func (db DB) close() error {
+func (db DB) Close() error {
 	ctx, _ := context.WithTimeout(context.Background(), 5*time.Second)
-	return db.client.Disconnect(ctx)
+	return db.Client.Disconnect(ctx)
 }
 
-func (db DB) reset() {
-	ctx, _ := context.WithTimeout(context.Background(), 10*time.Second)
-	_, err := db.client.Database(Database).Collection(Collection).DeleteMany(ctx, nil)
+func (db DB) Reset() {
+	ctx, cancel := context.WithTimeout(context.Background(), 100*time.Millisecond)
+	defer cancel()
+	err := db.Client.Database(Database).Drop(ctx)
 	if err != nil {
 		log.Error(err)
 	}
 	log.Debug("Deleted everything in database")
+}
+
+func createDummyContent(id int) Content {
+	langs := []string{"de", "en", "es", "ar"}
+	lang := langs[rand.Intn(len(langs))]
+	created := time.Now()
+	return Content{"test 1", "test1 answer", uint(id), lang, "work", created}
 }

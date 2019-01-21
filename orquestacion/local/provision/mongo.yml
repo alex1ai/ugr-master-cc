@@ -22,7 +22,7 @@
     name: mongodb-org
     state: present
     update_cache: yes
-    
+
 - name: Start mongoDB service
   become: yes
   become_method: sudo

@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"github.com/alex1ai/ugr-master-cc/authentication"
+	. "github.com/alex1ai/ugr-master-cc/data"
 	"github.com/gorilla/mux"
 	log "github.com/sirupsen/logrus"
 	"net/http"
@@ -53,7 +54,7 @@ func GetHandler(db *DB) func(w http.ResponseWriter, r *http.Request) {
 			query["lang"] = lang
 		}
 
-		response, err := db.query(query)
+		response, err := db.Query(query)
 
 		j, err := json.Marshal(response)
 		errorPanic(w, err)
@@ -68,7 +69,7 @@ func PostPutHandler(db *DB) func(w http.ResponseWriter, r *http.Request) {
 		decoder := json.NewDecoder(r.Body)
 
 		var instance Content
-		if err := decoder.Decode(&instance); err != nil || !instance.validate() {
+		if err := decoder.Decode(&instance); err != nil {
 			sendError(w, http.StatusBadRequest, err)
 		}
 
@@ -79,7 +80,7 @@ func PostPutHandler(db *DB) func(w http.ResponseWriter, r *http.Request) {
 			"id":   id,
 		}
 
-		_, err := db.update(query, instance)
+		_, err := db.Update(query, instance)
 		errorPanic(w, err)
 
 		sendResponse(w, nil, http.StatusNoContent)
@@ -100,7 +101,7 @@ func DeleteHandler(db *DB) func(w http.ResponseWriter, r *http.Request) {
 			"lang": lang,
 			"id":   uint(idNumber),
 		}
-		_, err = db.delete(query)
+		_, err = db.Delete(query)
 		if err != nil {
 			sendError(w, http.StatusInternalServerError, err)
 		}
@@ -108,27 +109,29 @@ func DeleteHandler(db *DB) func(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func LoginHandler(w http.ResponseWriter, r *http.Request) {
-	decoder := json.NewDecoder(r.Body)
+func LoginHandler(db *DB) func(w http.ResponseWriter, r *http.Request) {
+	return func(w http.ResponseWriter, r *http.Request) {
+		decoder := json.NewDecoder(r.Body)
 
-	var user authentication.User
-	if err := decoder.Decode(&user); err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
-	}
+		var user authentication.User
+		if err := decoder.Decode(&user); err != nil {
+			http.Error(w, err.Error(), http.StatusBadRequest)
+		}
 
-	tokenString, err := authentication.CreateToken(user.Name, user.Password)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusForbidden)
-	}
-	_, err = w.Write([]byte(tokenString))
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		tokenString, err := authentication.CreateToken(user.Name, user.Password, db)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusForbidden)
+		}
+		_, err = w.Write([]byte(tokenString))
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+		}
 	}
 }
 
 func InitHandler(db *DB) func(w http.ResponseWriter, r *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
-		err := db.populate(10)
+		err := db.Populate(10)
 		if err != nil {
 			sendError(w, http.StatusInternalServerError, err)
 		}
@@ -137,7 +140,7 @@ func InitHandler(db *DB) func(w http.ResponseWriter, r *http.Request) {
 
 func ResetHandler(db *DB) func(w http.ResponseWriter, r *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
-		db.reset()
+		db.Reset()
 	}
 }
 

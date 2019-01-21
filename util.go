@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"github.com/alex1ai/ugr-master-cc/data"
 	log "github.com/sirupsen/logrus"
 	"math/rand"
 	"net/http"
@@ -56,9 +57,9 @@ func getEnv(key string, def string) string {
 	return value
 }
 
-func createDummyContent(id int) Content {
+func createDummyContent(id int) data.Content {
 	langs := []string{"de", "en", "es", "ar"}
 	lang := langs[rand.Intn(len(langs))]
 	created := time.Now()
-	return Content{"test 1", "test1 answer", uint(id), lang, "work", created}
+	return data.Content{"test 1", "test1 answer", uint(id), lang, "work", created}
 }

@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/alex1ai/ugr-master-cc/authentication"
+	. "github.com/alex1ai/ugr-master-cc/data"
 	"github.com/mongodb/mongo-go-driver/bson"
 	"net/http"
 	"net/http/httptest"
@@ -17,9 +18,10 @@ import (
 var db *DB
 
 func populateDB(db *DB, instances int) {
-	collection := db.client.Database(Database).Collection(Collection)
+	collection := db.Client.Database(Database).Collection(Collection)
 
-	ctx, _ := context.WithTimeout(context.Background(), 10*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
 	for i := 0; i < instances; i++ {
 		content := createDummyContent(i)
 		_, err := collection.InsertOne(ctx, content)
@@ -34,11 +36,11 @@ func setupDB(t *testing.T) {
 		Database = "testing"
 		data := DB{}
 		portI, err := strconv.Atoi(MongoPort)
-		err = data.connect(MongoIp, portI)
+		err = data.Connect(MongoIp, portI)
 		if err != nil {
 			t.Error(err)
 		}
-		data.reset()
+		data.Reset()
 		populateDB(&data, 10)
 		if err != nil {
 			t.Fatal(err)
@@ -117,7 +119,7 @@ func TestDeleteHandler(t *testing.T) {
 	content := createDummyContent(1)
 	// First add something that we will delete next
 
-	conn := db.client.Database(Database).Collection(Collection)
+	conn := db.Client.Database(Database).Collection(Collection)
 	ctx, _ := context.WithTimeout(context.Background(), 2*time.Second)
 
 	res, err := conn.InsertOne(ctx, content)
@@ -183,13 +185,19 @@ func TestPostHandler(t *testing.T) {
 }
 
 func TestLoginHandler(t *testing.T) {
+	setupDB(t)
+	db.Reset()
+	_, err := authentication.AddUserIfNotThere("test1234", "test1234", db)
+	if err != nil {
+		t.Error(err)
+	}
 	users := []struct {
 		U    authentication.User
 		Pass bool
 	}{
-		{authentication.User{Name: "test", Password: "test123"}, true},
-		{authentication.User{Name: "test", Password: "test1234"}, false},
 		{authentication.User{Name: "abc", Password: "test1234"}, false},
+		{authentication.User{Name: "test1234", Password: "test1234"}, true},
+		{authentication.User{Name: "test1234", Password: "test124"}, false},
 	}
 	for _, user := range users {
 
@@ -206,9 +214,9 @@ func TestLoginHandler(t *testing.T) {
 
 		tokenString := rr.Body.String()
 
-		if len(tokenString) == 0 && user.Pass{
+		if len(tokenString) == 0 && user.Pass {
 			t.Errorf("Valid user %s reveiced illegal tokenString, found %s", user.U, tokenString)
-		} else if len(tokenString) > 0 && !user.Pass && rr.Code != http.StatusForbidden{
+		} else if len(tokenString) > 0 && !user.Pass && rr.Code != http.StatusForbidden {
 			t.Errorf("Unvalid user %s received legal tokenString, found %s with status %d", user.U, tokenString, rr.Code)
 		}
 	}

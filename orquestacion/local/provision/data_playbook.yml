@@ -12,10 +12,10 @@
   name: Start Mongo Server
   gather_facts: true
   vars:
-    BIND_IP: "0.0.0.0" 
+    BIND_IP: "0.0.0.0"
   tasks:
     - include: mongo.yml
-    - name: accept Traffic only from {{BIND_IP}} Subnet 
+    - name: accept Traffic only from {{BIND_IP}} Subnet
       become: yes
       become_method: sudo
       replace:
@@ -28,5 +28,5 @@
       become: yes
       become_method: sudo
       service:
-         name: mongod
-         state: restarted
+        name: mongod
+        state: restarted

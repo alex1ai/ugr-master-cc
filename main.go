@@ -2,6 +2,8 @@ package main
 
 import (
 	"fmt"
+	"github.com/alex1ai/ugr-master-cc/authentication"
+	"github.com/alex1ai/ugr-master-cc/data"
 	"github.com/gorilla/mux"
 	log "github.com/sirupsen/logrus"
 	"net/http"
@@ -18,12 +20,7 @@ const (
 	IdRegex   = "^[1-9][0-9]*"
 )
 
-var (
-	Database   = "info"
-	Collection = "content"
-)
-
-func Router(db *DB) *mux.Router {
+func Router(db *data.DB) *mux.Router {
 	r := mux.NewRouter()
 	r.HandleFunc("/content", GetHandler(db)).Methods("GET").
 		Queries("lang", "{lang}", "id", "{id:[0-9]*}")
@@ -35,7 +32,7 @@ func Router(db *DB) *mux.Router {
 
 	r.HandleFunc("/init", InitHandler(db))
 	r.HandleFunc("/reset", ResetHandler(db))
-	r.HandleFunc("/login", LoginHandler).Methods("POST")
+	r.HandleFunc("/login", LoginHandler(db)).Methods("POST")
 
 	r.HandleFunc("/", StatusHandler)
 	r.HandleFunc("/status", StatusHandler).Methods("GET")
@@ -46,8 +43,8 @@ func Router(db *DB) *mux.Router {
 
 func main() {
 
-	port := getEnv("PORT", "3000")
-	ip := getEnv("IP", "0.0.0.0")
+	port := getEnv("API_PORT", "3000")
+	ip := getEnv("API_IP", "0.0.0.0")
 	home := os.Getenv("HOME")
 	logPath := getEnv("LOG_FILE", home+"/logfile")
 	logFile := initLogger(logPath)
@@ -56,11 +53,15 @@ func main() {
 	}()
 
 	// Initialize Datebase
-	db := DB{}
+	db := data.DB{}
 	mPort := getEnv("MONGO_PORT", MongoPort)
 	mPortI, err := strconv.Atoi(mPort)
+	if err != nil {
+		log.Fatalf("Specified MONGO_PORT is not a number, found: %s", mPort)
+		panic(err)
+	}
 	mIp := getEnv("MONGO_IP", MongoIp)
-	err = db.connect(mIp, mPortI)
+	err = db.Connect(mIp, mPortI)
 
 	if err != nil {
 		log.Fatal(err)
@@ -68,7 +69,7 @@ func main() {
 	}
 
 	defer func() {
-		_ = db.close()
+		_ = db.Close()
 	}()
 
 	r := Router(&db)
@@ -76,8 +77,16 @@ func main() {
 	// Add middleware
 	r.Use(LoggingMiddleware)
 	r.Use(LoggedInMiddleware)
-	//loggedRouter := handlers.LoggingHandler(logFile, r)
 	log.Infof("Starting web server on %s:%s", ip, port)
+	log.Infof("Using Mongo server on: %s:%d", mIp, mPortI)
+
+	// Make sure admin user is registered
+	_, err = authentication.RegisterAdmin(&db)
+
+	if err != nil {
+		log.Error("Could not register admin user or database problems")
+	}
+
 	// Bind to a port and pass our router in
 	log.Fatal(http.ListenAndServe(fmt.Sprintf("%s:%s", ip, port), r))
 }

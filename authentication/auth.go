@@ -1,19 +1,28 @@
 package authentication
 
 import (
+	"context"
 	"errors"
 	"fmt"
+	"github.com/alex1ai/ugr-master-cc/data"
 	"github.com/dgrijalva/jwt-go"
-	"reflect"
+	"github.com/mongodb/mongo-go-driver/bson"
+	log "github.com/sirupsen/logrus"
+	"golang.org/x/crypto/bcrypt"
 	"time"
 )
 
 type User struct {
-	Name     string `json:"name"`
-	Password string `json:"pass"`
+	Name     string `json:"name" bson:"name"`
+	Password string `json:"pass" bson:"pass"`
 }
 
-var users = []User{{"test", "test123"},}
+const (
+	DbCollection = "users"
+)
+
+// Hash for password test123
+//var users = []User{{"test", "$2a$10$8ZCqEdkEjy46HJWcAOYk5eiTBpCqddQUkMf1wn6DbmysndMP1knWm"},}
 
 const (
 	// TODO: Secret should be env variable
@@ -21,8 +30,8 @@ const (
 	tokenValidTime = time.Minute * time.Duration(1)
 )
 
-func CreateToken(userName string, password string) (string, error) {
-	if !isRegistered(userName, password) {
+func CreateToken(userName string, password string, db *data.DB) (string, error) {
+	if !checkPassword(userName, password, db) {
 		return "", errors.New(fmt.Sprintf("User %s is not registered or wrong password", userName))
 	}
 	// Create a new token object, specifying signing method and the claims
@@ -39,9 +48,7 @@ func CreateToken(userName string, password string) (string, error) {
 
 func ValidateToken(tokenString string) (jwt.MapClaims, bool) {
 	// Parse takes the token string and a function for looking up the key. The latter is especially
-	// useful if you use multiple keys for your application.  The standard is to use 'kid' in the
-	// head of the token to identify which key to use, but the parsed token (head and claims) is provided
-	// to the callback, providing flexibility.
+	// useful if you use multiple keys for your application.
 	claims := jwt.MapClaims{}
 	token, err := jwt.ParseWithClaims(tokenString, claims, func(token *jwt.Token) (interface{}, error) {
 		// Don't forget to validate the alg is what you expect:
@@ -63,13 +70,70 @@ func ValidateToken(tokenString string) (jwt.MapClaims, bool) {
 
 }
 
-// TODO: Database lookup instead of local array; password hashing
-func isRegistered(userName string, password string) bool {
-	user := User{userName, password}
-	for _, u := range users {
-		if reflect.DeepEqual(user, u) {
-			return true
-		}
+func userNameIsRegistered(userName string, db *data.DB) bool {
+	collection := db.Client.Database(data.Database).Collection(DbCollection)
+	ctx, cancel := context.WithTimeout(context.Background(), 100*time.Millisecond)
+	defer cancel()
+	res := collection.FindOne(ctx, bson.M{"name": userName})
+
+	var user User
+	if err := res.Decode(&user); err != nil {
+		return false
 	}
-	return false
+
+	return true
+}
+
+func checkPassword(userName string, password string, db *data.DB) bool {
+	collection := db.Client.Database(data.Database).Collection(DbCollection)
+	ctx, cancel := context.WithTimeout(context.Background(), 100*time.Millisecond)
+	defer cancel()
+	res := collection.FindOne(ctx, bson.M{"name": userName})
+
+	var user User
+	if err := res.Decode(&user); err != nil {
+		log.Debug(err)
+		return false
+	}
+	valid := bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(password))
+
+	if valid != nil {
+		return false
+	}
+	return true
+}
+
+func RegisterAdmin(db *data.DB) (created bool, err error) {
+	if !userNameIsRegistered("admin", db) {
+		collection := db.Client.Database(data.Database).Collection(DbCollection)
+		ctx, cancel := context.WithTimeout(context.Background(), 1*time.Second)
+		defer cancel()
+		adminUser := User{"admin", "$2a$10$Is68fj8SktejE4mPz8AII.xvU.kTw2.7JgAfrvMmRrD4.Lku1Xngq"}
+
+		_, err := collection.InsertOne(ctx, adminUser)
+
+		return true, err
+	}
+	return false, nil
+
+}
+
+func AddUserIfNotThere(userName string, password string, db *data.DB) (created bool, err error) {
+	if !userNameIsRegistered(userName, db) {
+		collection := db.Client.Database(data.Database).Collection(DbCollection)
+		ctx, cancel := context.WithTimeout(context.Background(), 1*time.Second)
+		defer cancel()
+
+		hashPassword, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
+		if err != nil {
+			return false, err
+		}
+
+		user := User{userName, string(hashPassword)}
+
+		_, err = collection.InsertOne(ctx, user)
+
+		return true, err
+	}
+	return false, nil
 }
