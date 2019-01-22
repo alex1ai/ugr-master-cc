@@ -96,6 +96,8 @@ services:
     build: .
     environment:
       - MONGO_IP=data
+    env_file:
+      - secrets.env
     ports:
      - "80:3000"
   ```
@@ -109,6 +111,8 @@ We are defining two containers to be created, "data" and "web".
 This means mongo will block less file space, which after all might save some cents when running in a cloud environment.
  
 "web" is build from Dockerfile (see above) which is in the same directory as the docker-compose.yml file. Here we also set the environment variable of the IP (or local DNS in this case) where the webservice will find the database. Using `ports: 80:3000` the container port (**Last number**) will be accessible from the host machine (first number) on the specified port 80 (where the webserver is running). In cloud environments the first number will nearly always be 80/443 for HTTP/HTTPS respectively if there is no further internal (VM) port forwarding.
+
+The part of `env_file: ...` is explained at the bottom of this page. It will set environment variables in the container from a key/value file called _secrets.env_. 
  
 Running `$ sudo docker-compose up -d` will start the webservice in the docker environment. `-d` is for detached mode, which enables us to start it and leave the shell without the command being killed. To get some logs from the running containers, one can use `$ sudo docker-compose logs` to get logs of all running containers or specify a machine, e.g. `$ sudo docker-compose logs web`. 
  
@@ -140,9 +144,9 @@ Running `$ sudo docker-compose up -d` will start the webservice in the docker en
  
 # Terminating project itself: Authorization
 
-While I created a docker environment for this project in this milestone, I also made a huge step towards finising this project.
+While I created a docker environment for this project in this milestone, I also made a huge step towards finishing this project.
 
-I introduced autorization in order to control the usage of the webservice. Only authorized persons should be able to edit content, but everyone can retrieve content via the GET routes.
+I introduced authorization in order to control the usage of the webservice. Only authorized persons should be able to edit content, but everyone can retrieve content via the GET routes.
 
 Therefore, I leveraged JWT in order to provide temporal access to all routes after login. 
 A person can not register himself easily (important for my scenario) but can be added by other authorized persons. 
@@ -168,3 +172,53 @@ Server:
 The users are stored in the same MongoDB-Database as the content of the webpage. Therefore a new Collection "users" is created. Every received plaintext password (or front-end sha-hash) will be encrypted by bcrypt befored being stored in the collection.
 
 I also created a default admin user, which is automatically created at server startup. This ensures that always someone can edit and add more content to the service. 
+
+## Server secrets
+
+As every server involves a few authorization and security keys I had to think about a solution how to store/retrieve them. I decided to take the solution of providing credentials via environment variables.
+
+In my case I provide an env_file for docker-compose in the repository root folder called secrets.env and pass it to docker-compose :
+
+```yaml
+version: '3'
+services:
+  data:
+    image: mongo
+    restart: always
+    command: --smallfiles
+  web:
+    build: .
+    env_file:
+      - secrets.env
+    environment:
+      - MONGO_IP=data
+    ports:
+    - "80:3000"
+```
+
+while the env_files follows the [rules from docker-compose env_files](https://docs.docker.com/compose/env-file/) (every line is a KEY=VALUE pair).
+
+One could also pass the env variables different, for example via `docker-compose up -e KEY1=VALUE -e KEY2=VALUE`, but for multiple execution it is easier providing the file.
+
+The server will look for the secrets:
+  - ADMIN_PW
+  - JWT_SECRET
+  
+in the environment. **If they are not set, the user will use default values for both, which are publicly available in the source code.** The server will also log warnings on startup, if those values are not customized.
+
+## Postman Tests for authentication
+
+We will be returned a JWT-Token when making a POST-request to /login for a registered user:
+
+![get_token](./containers/get_token.png)
+
+Adding this token to the head as Bearer Authorization allows us to add content via POST /content:
+
+![add_content](./containers/add_content.png)
+
+While we can see that the content was added via GET /content. We also send the JWT with it (too lazy to delete), but the server just ignores it in this case and shows that the content was added.
+
+![show_content](./containers/see_content.png)
+
+There are some more entities in there already, as I have played around with the database a little and didn't reset it. Should not be of concern for making this point of showing successful authenticated actions.
+
