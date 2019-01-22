@@ -20,7 +20,7 @@ const (
 func checkAndSetEnvSecrets(){
 	vars := map[string]string {
 		"ADMIN_PW": "admin",
-		"JWT_SECRET": "nasdfta6svdf5753v15v2763561256v35ruzstfbatszudtf7651v6t",
+		"JWT_SECRET": "admin secret, change me!",
 	}
 	for k,v := range vars {
 		set := os.Getenv(k)

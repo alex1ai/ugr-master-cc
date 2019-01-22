@@ -25,11 +25,8 @@ func LoggedInMiddleware(next http.Handler) http.Handler {
 		}()
 		if r.URL.Path != "/login" && r.Method != http.MethodGet {
 			token := r.Header.Get("Authorization")
-			if token != "" {
-				token = strings.TrimSpace(token)
-				log.Debug("Found token:", token)
-
-				token = strings.Split(token, "\\w")[1]
+			if token != "" && strings.HasPrefix(token, "Bearer"){
+				token = strings.Fields(token)[1]
 				_, ok := authentication.ValidateToken(token)
 
 				if ok {
@@ -39,6 +36,7 @@ func LoggedInMiddleware(next http.Handler) http.Handler {
 				}
 			}
 		}
+
 		next.ServeHTTP(w, r)
 	})
 }

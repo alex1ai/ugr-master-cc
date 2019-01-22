@@ -2,6 +2,7 @@ package authentication
 
 import (
 	"context"
+	"encoding/base64"
 	"errors"
 	"fmt"
 	"github.com/alex1ai/ugr-master-cc/data"
@@ -15,7 +16,7 @@ import (
 
 type User struct {
 	Name     string `json:"name" bson:"name"`
-	Password string `json:"pass" bson:"pass"`
+	Password string `json:"password" bson:"password"`
 }
 
 
@@ -25,7 +26,9 @@ const (
 )
 
 func getSecret() []byte{
-	return []byte(os.Getenv("JWT_SECRET"))
+	plain := []byte(os.Getenv("JWT_SECRET"))
+	hash := base64.StdEncoding.EncodeToString(plain)
+	return []byte(hash)
 }
 
 func CreateToken(userName string, password string, db *data.DB) (string, error) {
