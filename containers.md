@@ -53,10 +53,6 @@ FROM scratch
 # Copy the compiled binary from the intermediate container above to the new scratch container
 COPY --from=build /bin/infogration /infogration
 
-# Create no-root user to exectute binary for security reason
-#RUN groupadd -r infogration && useradd --no-log-init -r -g infogration infogration
-#USER infogration
-
 # Start server
 ENTRYPOINT ["/infogration"]
 ```
