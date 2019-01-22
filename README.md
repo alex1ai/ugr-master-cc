@@ -1,6 +1,4 @@
 [![Build Status](https://travis-ci.org/alex1ai/ugr-master-cc.svg?branch=master)](https://travis-ci.org/alex1ai/ugr-master-cc)
-[![Docker automated](https://img.shields.io/docker/automated/alexgrimm/infogration-backend.svg)](https://cloud.docker.com/repository/docker/alexgrimm/infogration-backend/general)
-[![Docker status](https://img.shields.io/docker/build/alexgrimm/infogration-backend.svg)](https://cloud.docker.com/repository/docker/alexgrimm/infogration-backend/general)
 
 # infogration-backend
 
