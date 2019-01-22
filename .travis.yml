@@ -4,6 +4,9 @@ go:
   - "1.11"
   #before_deploy: wget https://github.com/zeit/now-cli/releases/download/11.5.2/now-linux.gz && gunzip -c now-linux.gz > ~/now && rm now-linux.gz && chmod +x ~/now
 services: mongodb
+env:
+  - ADMIN_PW="admin"
+  - JWT_TOKEN="test Only"
 #deploy:
 #- provider: script # Run a custom deployment script which we will define below
 #  script: ~/now --public --token $NOW_TOKEN
