@@ -120,12 +120,12 @@ func TestDeleteHandler(t *testing.T) {
 	// First add something that we will delete next
 
 	conn := db.Client.Database(Database).Collection(Collection)
-	ctx, _ := context.WithTimeout(context.Background(), 2*time.Second)
-
+	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
 	res, err := conn.InsertOne(ctx, content)
 	if res.InsertedID == nil || err != nil {
 		t.Error("could not put content in DB")
 	}
+	cancel()
 
 	var other Content
 	err = conn.FindOne(context.Background(), bson.M{"lang": content.Language, "id": content.Id}).Decode(&other)
@@ -216,7 +216,7 @@ func TestLoginHandler(t *testing.T) {
 
 		if len(tokenString) == 0 && user.Pass {
 			t.Errorf("Valid user %s reveiced illegal tokenString, found %s", user.U, tokenString)
-		} else if len(tokenString) > 0 && !user.Pass && rr.Code != http.StatusForbidden {
+		} else if len(tokenString) > 0 && !user.Pass && rr.Code != http.StatusUnauthorized {
 			t.Errorf("Unvalid user %s received legal tokenString, found %s with status %d", user.U, tokenString, rr.Code)
 		}
 	}

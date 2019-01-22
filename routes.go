@@ -120,7 +120,7 @@ func LoginHandler(db *DB) func(w http.ResponseWriter, r *http.Request) {
 
 		tokenString, err := authentication.CreateToken(user.Name, user.Password, db)
 		if err != nil {
-			http.Error(w, err.Error(), http.StatusForbidden)
+			http.Error(w, err.Error(), http.StatusUnauthorized)
 		}
 		_, err = w.Write([]byte(tokenString))
 		if err != nil {
@@ -146,5 +146,5 @@ func ResetHandler(db *DB) func(w http.ResponseWriter, r *http.Request) {
 
 func ErrorHandler(w http.ResponseWriter, r *http.Request) {
 	http.Error(w, "This is not the page you are looking for", http.StatusNotFound)
-	log.Warnf("Page not found: %s", r.URL.Path)
+	log.Infof("Route not found: %s", r.URL.Path)
 }

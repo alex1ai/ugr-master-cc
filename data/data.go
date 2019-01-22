@@ -16,13 +16,16 @@ var (
 	Collection = "content"
 )
 
+const timeOut = 200 *time.Millisecond
+
 type DB struct {
 	Client *mongo.Client
 }
 
 func (db *DB) Connect(ip string, port int) (err error) {
 	log.Infof("Connecting to Mongo Database, make sure it is running on %s:%d", ip, port)
-	ctx, _ := context.WithTimeout(context.Background(), 5*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), timeOut)
+	defer cancel()
 	db.Client, err = mongo.Connect(ctx, fmt.Sprintf("mongodb://%s:%d", ip, port))
 
 	if err != nil {
@@ -30,7 +33,7 @@ func (db *DB) Connect(ip string, port int) (err error) {
 	}
 
 	// Test reaching the DB
-	ctx, _ = context.WithTimeout(context.Background(), 2*time.Second)
+	ctx, _ = context.WithTimeout(context.Background(), timeOut)
 	err = db.Client.Ping(ctx, readpref.Primary())
 	return
 }
@@ -42,10 +45,9 @@ func (db DB) Populate(n int) error {
 	content := make([]interface{}, n)
 	for i := 0; i < n; i++ {
 		content[i] = createDummyContent(i + 1)
-		time.Sleep(1 * time.Second)
 	}
 
-	ctx, _ := context.WithTimeout(context.Background(), 1*time.Second)
+	ctx, _ := context.WithTimeout(context.Background(), timeOut)
 	_, err := collection.InsertMany(ctx, content)
 
 	return err
@@ -55,7 +57,8 @@ func (db DB) Query(query map[string]interface{}) ([]Content, error) {
 
 	collection := db.Client.Database(Database).Collection(Collection)
 
-	ctx, _ := context.WithTimeout(context.Background(), 10*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), timeOut)
+	defer cancel()
 	cur, err := collection.Find(ctx, query)
 
 	if err != nil {
@@ -77,9 +80,9 @@ func (db DB) Query(query map[string]interface{}) ([]Content, error) {
 }
 
 func (db DB) Update(filter interface{}, replacement interface{}) (bool, error) {
-	ctx, _ := context.WithTimeout(context.Background(), 10*time.Second)
 	coll := db.Client.Database(Database).Collection(Collection)
-
+	ctx, cancel := context.WithTimeout(context.Background(), timeOut)
+	defer cancel()
 	opts := options.ReplaceOptions{}
 	// If lang and id not there yet, this represents the same as a PUT request, i.e. creating a new Document
 	opts.SetUpsert(true)
@@ -89,9 +92,9 @@ func (db DB) Update(filter interface{}, replacement interface{}) (bool, error) {
 }
 
 func (db DB) Delete(instanceQuery interface{}) (*mongo.DeleteResult, error) {
-	ctx, _ := context.WithTimeout(context.Background(), 10*time.Second)
 	coll := db.Client.Database(Database).Collection(Collection)
-
+	ctx, cancel := context.WithTimeout(context.Background(), timeOut)
+	defer cancel()
 	del, err := coll.DeleteOne(ctx, instanceQuery)
 	log.Debug(del.DeletedCount)
 
@@ -99,12 +102,12 @@ func (db DB) Delete(instanceQuery interface{}) (*mongo.DeleteResult, error) {
 }
 
 func (db DB) Close() error {
-	ctx, _ := context.WithTimeout(context.Background(), 5*time.Second)
+	ctx, _ := context.WithTimeout(context.Background(), timeOut)
 	return db.Client.Disconnect(ctx)
 }
 
 func (db DB) Reset() {
-	ctx, cancel := context.WithTimeout(context.Background(), 100*time.Millisecond)
+	ctx, cancel := context.WithTimeout(context.Background(), timeOut)
 	defer cancel()
 	err := db.Client.Database(Database).Drop(ctx)
 	if err != nil {

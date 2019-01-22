@@ -10,14 +10,13 @@ import (
 func LoggingMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		// Do stuff here
-		log.Info(r.RequestURI, r.Method)
+		log.Infof("Route: %s, Method: %s, Authorization token: %s", r.RequestURI, r.Method, r.Header.Get("Authorization"))
 		next.ServeHTTP(w, r)
 	})
 }
 
 func LoggedInMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		log.Info(r.Header)
 		defer func() {
 			if err := recover(); err != nil {
 				log.Fatal(err)
@@ -28,7 +27,7 @@ func LoggedInMiddleware(next http.Handler) http.Handler {
 			token := r.Header.Get("Authorization")
 			if token != "" {
 				token = strings.TrimSpace(token)
-				log.Debug(token)
+				log.Debug("Found token:", token)
 
 				token = strings.Split(token, "\\w")[1]
 				_, ok := authentication.ValidateToken(token)

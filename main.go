@@ -52,6 +52,10 @@ func Router(db *data.DB) *mux.Router {
 	r.HandleFunc("/status", StatusHandler).Methods("GET")
 	r.HandleFunc("/{.*}", ErrorHandler)
 
+	// Add middleware
+	r.Use(LoggingMiddleware)
+	r.Use(LoggedInMiddleware)
+
 	return r
 }
 
@@ -92,9 +96,6 @@ func main() {
 
 	r := Router(&db)
 
-	// Add middleware
-	r.Use(LoggingMiddleware)
-	r.Use(LoggedInMiddleware)
 	log.Infof("Starting web server on %s:%s", ip, port)
 	log.Infof("Using Mongo server on: %s:%d", mIp, mPortI)
 
