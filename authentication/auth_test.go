@@ -21,7 +21,7 @@ func getEnv(key string, def string) string {
 func setupDB(t *testing.T) {
 	if db == nil {
 		Database = "testing"
-		Collection = DbCollection
+		ContentCollection = DbCollection
 
 		data := DB{}
 
@@ -109,4 +109,6 @@ func TestValidateToken(t *testing.T) {
 	if claims["user"] != "test" {
 		t.Error("Could not read correct user test from token")
 	}
+
+	_ = db.Close()
 }

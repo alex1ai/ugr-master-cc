@@ -40,8 +40,8 @@ func Router(db *data.DB) *mux.Router {
 		Queries("lang", "{lang}", "id", "{id:[0-9]*}")
 	r.HandleFunc("/content", GetHandler(db)).Methods("GET")
 
-	r.HandleFunc("/content", PostPutHandler(db)).Methods("POST")
-	r.HandleFunc("/content", PostPutHandler(db)).Methods("PUT")
+	r.HandleFunc("/content", EditContentHandler(db)).Methods("POST")
+	r.HandleFunc("/content", EditContentHandler(db)).Methods("PUT")
 	r.HandleFunc("/content/{lang}/{id}", DeleteHandler(db)).Methods("DELETE")
 
 	r.HandleFunc("/init", InitHandler(db))

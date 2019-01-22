@@ -63,8 +63,26 @@ func GetHandler(db *DB) func(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+
+func AddContentHandler(db *DB) func(w http.ResponseWriter, r *http.Request) {
+	return func(w http.ResponseWriter, r *http.Request) {
+		decoder := json.NewDecoder(r.Body)
+
+		var instance Content
+		if err := decoder.Decode(&instance); err != nil {
+			sendError(w, http.StatusBadRequest, err)
+		}
+
+		_, err := db.Add(instance)
+		errorPanic(w, err)
+
+		sendResponse(w, nil, http.StatusNoContent)
+
+	}
+}
+
 // TODO: If this is a put request, automatically fill Id-Number according to maximum in database
-func PostPutHandler(db *DB) func(w http.ResponseWriter, r *http.Request) {
+func EditContentHandler(db *DB) func(w http.ResponseWriter, r *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
 		decoder := json.NewDecoder(r.Body)
 

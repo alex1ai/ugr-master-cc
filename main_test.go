@@ -18,7 +18,7 @@ import (
 var db *DB
 
 func populateDB(db *DB, instances int) {
-	collection := db.Client.Database(Database).Collection(Collection)
+	collection := db.Client.Database(Database).Collection(ContentCollection)
 
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 	defer cancel()
@@ -119,7 +119,7 @@ func TestDeleteHandler(t *testing.T) {
 	content := createDummyContent(1)
 	// First add something that we will delete next
 
-	conn := db.Client.Database(Database).Collection(Collection)
+	conn := db.Client.Database(Database).Collection(ContentCollection)
 	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
 	res, err := conn.InsertOne(ctx, content)
 	if res.InsertedID == nil || err != nil {

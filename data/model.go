@@ -5,14 +5,19 @@ import (
 )
 
 type Content struct {
-	Question  string    `bson:"q, omitempty" json:"question, omitempty"`
-	Answer    string    `bson:"a, omitempty" json:"answer, omitempty"`
+	Question  string    `bson:"q" json:"question"`
+	Answer    string    `bson:"a" json:"answer"`
 	Id        uint      `bson:"id, omitempty" json:"id, omitempty"`
-	Language  string    `bson:"lang, omitempty" json:"lang, omitempty"`
-	Category  string    `bson:"cat, omitempty" json:"category, omitempty"`
-	CreatedAt time.Time `bson:"time, omitempty" json:"created_at, omitempty"`
+	Language  string    `bson:"lang" json:"lang"`
+	Category  string    `bson:"cat" json:"category"`
+	CreatedAt time.Time `bson:"created_at" json:"created_at, omitempty"`
 }
 
-func (c *Content) validate() bool {
-	return true
+func (c *Content) SetCreatedAtNow(){
+	c.CreatedAt = time.Now()
 }
+
+func (c *Content) SetID(id uint) {
+	c.Id = id
+}
+
