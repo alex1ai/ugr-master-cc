@@ -4,11 +4,16 @@ services:
     image: mongo
     restart: always
     command: --smallfiles
+    ports:
+      - "27017:27017"
   web:
+    depends_on:
+      - data
     build: .
     env_file:
       - secrets.env
     environment:
-      - MONGO_IP=data
+      MONGO_IP: data
     ports:
-      - "80:3000"
+      - "3000:3000"
+    restart: always

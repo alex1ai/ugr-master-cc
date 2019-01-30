@@ -90,20 +90,21 @@ func main() {
 	err = db.Connect(mIp, mPortI)
 
 	if err != nil {
-		log.Fatal(err)
+		log.Fatalf("Error while connecting to DB: %s", err)
 		os.Exit(1)
 	}
 
 	r := Router(&db)
-
-	log.Infof("Starting web server on %s:%s", ip, port)
-	log.Infof("Using Mongo server on: %s:%d", mIp, mPortI)
 
 	// Make sure admin user is registered
 	_, err = authentication.RegisterAdmin(&db)
 	if err != nil {
 		log.Error("Could not register admin user or database problems")
 	}
+
+
+	log.Infof("Starting web server on %s:%s", ip, port)
+	log.Infof("Using Mongo server on: %s:%d", mIp, mPortI)
 
 	// Start server
 	log.Fatal(http.ListenAndServe(fmt.Sprintf("%s:%s", ip, port), r))
