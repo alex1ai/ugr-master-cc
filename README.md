@@ -73,7 +73,6 @@ The project can be deployed with Docker (docker-compose) and the service api is 
 If you had docker-compose locally installed you can directly start everything with the provided docker-compose.yml. 
 You can also run the service with `sudo docker run --rm -e MONGO_IP={IP of running MongoDB} alexgrimm/infogration-backend` if you have a MongoDB running somewhere.
 
+Contenedor: http://infogration-backend.francecentral.cloudapp.azure.com
+
 Everything about the containers and how to run them is documented [here](https://github.com/alex1ai/ugr-master-cc/blob/gh-pages/containers.md).
-
-Contenedor: 20.188.38.61
-
