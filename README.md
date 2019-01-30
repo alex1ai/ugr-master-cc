@@ -68,7 +68,7 @@ Despliegue Vagrant: 20.188.38.46
 
 ## Containers
 
-The project can be deployed with Docker (docker-compose) and the service api is deployed as an image on [Docker Hub](https://cloud.docker.com/repository/docker/alexgrimm/infogration-backend) as well.
+The project can be deployed with Docker (docker-compose) and the service api is deployed as an image on [Docker Hub](https://hub.docker.com/r/alexgrimm/infogration-backend) as well.
 
 If you had docker-compose locally installed you can directly start everything with the provided docker-compose.yml. 
 You can also run the service with `sudo docker run --rm -e MONGO_IP={IP of running MongoDB} alexgrimm/infogration-backend` if you have a MongoDB running somewhere.
