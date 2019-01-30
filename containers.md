@@ -138,6 +138,26 @@ Running `$ sudo docker-compose up -d` will start the webservice in the docker en
  
  **Warning**: Using the Dockerhub version only spins up the service and has no database connected. Yet when starting the service will look for a MongoDB service running somewhere. Therefore you need to provide a MongoDB-IP (and Port if not default) via environment variable when starting the docker hub container (add parameter -e MONGO_IP={ipaddress} to docker run).
  
+# Running the Containers remotely on Azure
+
+To deploy the webservice on Azure, I chose to use _docker-machine_ because it uses, kind of, the same CLI as Vagrant and I got to know that one it the previous milestone. I will use the dockerhub-image for the webservice because this only has to download the 6MB webservice instead of building the application itself (where downloading Go already is >100MB and only one of 10 steps in the Dockerfile).
+
+At first I create the virtual machine:
+
+```bash
+docker-machine create --driver azure --azure-subscription-id $AZURE_SUBSCRIPTION_ID --azure-location francecentral --azure-open-port 80 --azure-size Standard_B1s azurehost
+```
+
+![create](./containers/create_azure.png)
+
+The optional parameters describe the VM which is created, which are the same as in all previous deployments. Ubuntu 16.04 is chosen as a default VM, and we can open port 80 directly on creation time to reach the webservice. `$ eval $(docker-machine env azurehost)` sets the azure machine as default for all upcoming commands for docker(-compose).
+ 
+After that we can deploy the service which uses the local docker-compose.yml file. Last but not least we can get the IP of the created VM and make a request to comfirm that the service is running:
+
+![deploy](./containers/deploy_azure.png)
+
+In order to save resources, I will shutdown and remove everything after the tests with `$ azure-machine rm azurehost`.
+
 # Terminating project itself: Authorization
 
 While I created a docker environment for this project in this milestone, I also made a huge step towards finishing this project.
@@ -217,4 +237,5 @@ While we can see that the content was added via GET /content. We also send the J
 ![show_content](./containers/see_content.png)
 
 There are some more entities in there already, as I have played around with the database a little and didn't reset it. Should not be of concern for making this point of showing successful authenticated actions.
+
 
