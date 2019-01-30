@@ -75,4 +75,5 @@ You can also run the service with `sudo docker run --rm -e MONGO_IP={IP of runni
 
 Everything about the containers and how to run them is documented [here](https://github.com/alex1ai/ugr-master-cc/blob/gh-pages/containers.md).
 
-Contenedor: TODO
+Contenedor: 20.188.38.61
+
