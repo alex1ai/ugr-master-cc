@@ -9,11 +9,11 @@ services:
   web:
     depends_on:
       - data
-    build: .
+    image: alexgrimm/infogration-backend
     env_file:
       - secrets.env
     environment:
       MONGO_IP: data
     ports:
-      - "3000:3000"
+      - "80:3000"
     restart: always
